@@ -10,6 +10,8 @@ build/
 # Rust / Tauri
 target/
 packages/desktop/src-tauri/gen/
+# Artefact accidentel : npm install lancé dans src-tauri/ (pas de packages/ ici)
+packages/desktop/src-tauri/packages/
 
 # Capacitor / mobile
 .expo/
