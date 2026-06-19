@@ -1,0 +1,9 @@
+{
+  "name": "sc-mfd",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Companion MFD pour Star Citizen — monorepo (desktop + tablet + shared).",
+  "workspaces": [
+    "packages/*"
+  ]
+}

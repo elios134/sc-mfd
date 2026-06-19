@@ -1,0 +1,24 @@
+[package]
+name = "sc-mfd-desktop"
+version = "0.0.0"
+description = "MFD Bridge — desktop"
+authors = ["andre"]
+edition = "2021"
+
+[lib]
+name = "sc_mfd_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1.52.3", features = ["rt-multi-thread", "net", "sync", "time", "macros"] }
+tokio-tungstenite = "0.29.0"
+futures-util = "0.3.32"
+local-ip-address = "0.6.13"
+windows = { version = "0.61", features = ["Win32_UI_Input_KeyboardAndMouse"] }

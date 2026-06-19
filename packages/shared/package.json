@@ -1,0 +1,16 @@
+{
+  "name": "@sc-mfd/shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Code commun sc-mfd (mapping touches, protocole, types) — TS pur.",
+  "type": "module",
+  "main": "./index.ts",
+  "module": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}
