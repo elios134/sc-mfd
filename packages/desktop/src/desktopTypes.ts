@@ -13,6 +13,8 @@ export interface ScInstall {
   path: string | null;
   channel: string | null;
   detected: boolean;
+  // "manual" = chemin choisi par l'utilisateur (prioritaire), "auto" = auto-détecté.
+  source: "manual" | "auto" | null;
 }
 
 export interface LogEntry {

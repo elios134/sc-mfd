@@ -43,6 +43,7 @@ type Props = {
   onSelectTheme: (id: string) => void;
   scInstall: ScInstall | null;
   scResolved: boolean;
+  scError: string | null;
   logs: LogEntry[];
   port: number;
   onPort: (v: number) => void;
@@ -53,6 +54,7 @@ type Props = {
   language: Language;
   onLanguage: (v: Language) => void;
   onPickScFolder: () => void;
+  onResetScFolder: () => void;
   profileDeploy: DeployResult | null;
   showProfileNotice: boolean;
   onDismissProfileNotice: () => void;
@@ -65,6 +67,7 @@ export function SettingsView({
   onSelectTheme,
   scInstall,
   scResolved,
+  scError,
   logs,
   port,
   onPort,
@@ -75,6 +78,7 @@ export function SettingsView({
   language,
   onLanguage,
   onPickScFolder,
+  onResetScFolder,
   profileDeploy,
   showProfileNotice,
   onDismissProfileNotice,
@@ -126,14 +130,14 @@ export function SettingsView({
           <div className="row">
             <div className="info">
               <b>Démarrer avec Windows</b>
-              <small>TODO natif (plugin autostart)</small>
+              <small>Lance l'app à l'ouverture de session</small>
             </div>
             <Switch on={startWithWindows} onChange={onStartWithWindows} />
           </div>
           <div className="row">
             <div className="info">
               <b>Réduire dans la barre des tâches</b>
-              <small>TODO natif (system tray)</small>
+              <small>Fermer (✕) place l'app dans le system tray au lieu de quitter</small>
             </div>
             <Switch on={minimizeToTray} onChange={onMinimizeToTray} />
           </div>
@@ -187,11 +191,23 @@ export function SettingsView({
             <button type="button" onClick={onPickScFolder}>
               Changer
             </button>
+            {scInstall?.source === "manual" && (
+              <button type="button" onClick={onResetScFolder} title="Revenir à la détection automatique">
+                Auto
+              </button>
+            )}
           </div>
+          {scError && (
+            <div className="detect-ko">
+              <span>●</span> {scError}
+            </div>
+          )}
           {scResolved &&
+            !scError &&
             (scInstall?.detected ? (
               <div className="detect-ok">
-                <span>●</span> Détecté automatiquement
+                <span>●</span>{" "}
+                {scInstall.source === "manual" ? "Dossier choisi manuellement" : "Détecté automatiquement"}
                 {scInstall.channel ? ` · ${scInstall.channel}` : ""}
               </div>
             ) : (

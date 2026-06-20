@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { UnlistenFn } from "@tauri-apps/api/event";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { enable as enableAutostart, disable as disableAutostart, isEnabled as isAutostartEnabled } from "@tauri-apps/plugin-autostart";
 import { ACTIONS, getThemeById } from "@sc-mfd/shared";
 import type { MfdAction } from "@sc-mfd/shared";
 import { useThemeZone } from "./useThemeZone";
@@ -14,7 +16,12 @@ import { readProfiles } from "./profileReader";
 import type { ProfileReadResult } from "./profileReader";
 import { deployControlProfile } from "./controlProfile";
 import type { DeployResult } from "./controlProfile";
-import { loadProfileNoticeSeen, saveProfileNoticeSeen } from "./desktopSettings";
+import {
+  loadProfileNoticeSeen,
+  saveProfileNoticeSeen,
+  saveScPathOverride,
+  clearScPathOverride,
+} from "./desktopSettings";
 import type { Device, LoadStep, LogEntry, ScInstall, ServerInfo } from "./desktopTypes";
 import {
   loadWsPort,
@@ -70,6 +77,8 @@ export default function App() {
 
   const [scInstall, setScInstall] = useState<ScInstall | null>(null);
   const [scResolved, setScResolved] = useState(false);
+  // Message d'erreur du sélecteur de dossier SC (dossier invalide, etc.).
+  const [scError, setScError] = useState<string | null>(null);
 
   // Mapping dynamique des touches (C2/C3a) : vraies touches du joueur, transmises
   // au Rust pour piloter l'émulation (source primaire ; fallback keymap figé).
@@ -164,9 +173,28 @@ export default function App() {
       })
       .catch(() => {
         if (disposed) return;
-        setScInstall({ path: null, channel: null, detected: false });
+        setScInstall({ path: null, channel: null, detected: false, source: null });
         setScResolved(true);
       });
+
+    // Synchronise l'état initial du toggle « Réduire dans le tray » avec le Rust
+    // (le défaut Rust est true ; on pousse la vraie valeur persistée localStorage).
+    void invoke("set_minimize_to_tray", { enabled: minimizeToTray }).catch((e) =>
+      console.error("[tray] sync initiale échouée:", e)
+    );
+
+    // Resynchronise le toggle « Démarrer avec Windows » avec l'état natif réel
+    // (registre HKCU\…\Run via le plugin) : reflète la vérité même si l'état a
+    // été changé ailleurs. Tolérant : un échec laisse la valeur localStorage.
+    isAutostartEnabled()
+      .then((real) => {
+        if (disposed) return;
+        setStartWithWindows((prev) => {
+          if (prev !== real) saveStartWithWindows(real);
+          return real;
+        });
+      })
+      .catch((e) => console.warn("[autostart] is_enabled indisponible:", e));
 
     // Lecture du profil + transmission à l'émulation Rust (C3a). Pas de garde
     // `disposed` : loadProfile ne fait que setState/invoke, sûrs après démontage.
@@ -237,25 +265,78 @@ export default function App() {
     saveWsPort(v);
     // TODO backend : rebind du serveur WS sur le port configuré (refonte server.rs).
   };
-  const toggleStartWithWindows = (v: boolean) => {
+  const toggleStartWithWindows = async (v: boolean) => {
+    // Optimiste : on bascule l'UI tout de suite, puis on applique l'effet natif.
     setStartWithWindows(v);
     saveStartWithWindows(v);
-    // TODO natif : tauri-plugin-autostart (enable()/disable()) — app installée.
+    try {
+      if (v) await enableAutostart();
+      else await disableAutostart();
+    } catch (e) {
+      console.error("[autostart] échec de l'application:", e);
+      // Réaligne l'UI sur l'état natif réel après échec.
+      try {
+        const real = await isAutostartEnabled();
+        setStartWithWindows(real);
+        saveStartWithWindows(real);
+      } catch {
+        /* ignore : on garde la valeur optimiste */
+      }
+    }
   };
   const toggleMinimizeToTray = (v: boolean) => {
     setMinimizeToTray(v);
     saveMinimizeToTray(v);
-    // TODO natif : system tray (TrayIconBuilder) + interception CloseRequested (hide au lieu de quitter).
+    // Transmet l'état au Rust (lu frais au moment du close pour cacher vs quitter).
+    void invoke("set_minimize_to_tray", { enabled: v }).catch((e) =>
+      console.error("[tray] sync état échouée:", e)
+    );
   };
   const changeLanguage = (v: Language) => {
     setLanguage(v);
     saveLanguage(v);
     // TODO i18n : brancher un système de traduction (les libellés sont en dur pour l'instant).
   };
-  const pickScFolder = () => {
-    // TODO natif : sélecteur de dossier via tauri-plugin-dialog (open({ directory: true })),
-    // puis persistance du chemin et passage en "configuré" prioritaire (cf. V2).
-    console.info("[sc] sélecteur de dossier : à brancher (tauri-plugin-dialog).");
+  const pickScFolder = async () => {
+    setScError(null);
+    let selected: string | string[] | null;
+    try {
+      selected = await openDialog({
+        directory: true,
+        multiple: false,
+        title: "Sélectionner le dossier d'installation de Star Citizen (canal, ex. …\\StarCitizen\\LIVE)",
+      });
+    } catch (e) {
+      console.error("[sc] ouverture du sélecteur échouée:", e);
+      setScError("Impossible d'ouvrir le sélecteur de dossier.");
+      return;
+    }
+    if (selected == null || Array.isArray(selected)) return; // annulé
+    try {
+      // Le Rust valide (Data.p4k) et persiste ; renvoie l'install résolu (manual).
+      const res = await invoke<ScInstall>("set_sc_override", { path: selected });
+      saveScPathOverride(selected);
+      setScInstall(res);
+      setScError(null);
+      // Le chemin SC a changé → relit le profil + redépose SCMFD.xml au bon endroit.
+      void loadProfile();
+    } catch (e) {
+      // Dossier invalide : message clair, rien n'est enregistré (cf. Rust).
+      setScError(String(e));
+    }
+  };
+
+  const resetScFolder = async () => {
+    setScError(null);
+    try {
+      const res = await invoke<ScInstall>("clear_sc_override");
+      clearScPathOverride();
+      setScInstall(res);
+      void loadProfile();
+    } catch (e) {
+      console.error("[sc] réinitialisation échouée:", e);
+      setScError(String(e));
+    }
   };
 
   const serverOk = server !== null && !serverError;
@@ -331,6 +412,7 @@ export default function App() {
           onSelectTheme={selectTheme}
           scInstall={scInstall}
           scResolved={scResolved}
+          scError={scError}
           logs={logs}
           port={port}
           onPort={changePort}
@@ -341,6 +423,7 @@ export default function App() {
           language={language}
           onLanguage={changeLanguage}
           onPickScFolder={pickScFolder}
+          onResetScFolder={resetScFolder}
           profileDeploy={profileDeploy}
           showProfileNotice={!noticeSeen}
           onDismissProfileNotice={dismissNotice}

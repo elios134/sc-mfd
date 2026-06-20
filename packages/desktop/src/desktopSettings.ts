@@ -9,6 +9,7 @@ const KEYS = {
   minimizeToTray: "sc-mfd.desktop.minimizeToTray",
   language: "sc-mfd.desktop.language",
   profileNoticeSeen: "sc-mfd.desktop.profileNoticeSeen",
+  scPathOverride: "sc-mfd.scPath.override",
 } as const;
 
 function readStr(key: string, fallback: string): string {
@@ -66,6 +67,27 @@ export function loadLanguage(): Language {
 }
 export function saveLanguage(v: Language): void {
   writeStr(KEYS.language, v);
+}
+
+// Chemin SC choisi manuellement (override). La SOURCE DE VÉRITÉ qui le rend
+// prioritaire est côté Rust (fichier de config lu par resolve_sc_install) ; cette
+// clé localStorage n'est qu'un miroir pour l'affichage instantané au démarrage.
+export function loadScPathOverride(): string | null {
+  try {
+    return localStorage.getItem(KEYS.scPathOverride);
+  } catch {
+    return null;
+  }
+}
+export function saveScPathOverride(path: string): void {
+  writeStr(KEYS.scPathOverride, path);
+}
+export function clearScPathOverride(): void {
+  try {
+    localStorage.removeItem(KEYS.scPathOverride);
+  } catch {
+    /* pas de localStorage : rien à faire */
+  }
 }
 
 // Notice « sélectionner le profil SC MFD dans le jeu » : affichée tant que

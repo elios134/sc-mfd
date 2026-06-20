@@ -9,8 +9,9 @@
 // les cas courants. À enrichir plus tard si besoin.
 
 use serde::Serialize;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::OnceLock;
 
 // Canaux par priorité décroissante (LIVE gagne).
 const CHANNELS: [&str; 4] = ["LIVE", "PTU", "EPTU", "TECH-PREVIEW"];
@@ -20,6 +21,35 @@ pub struct ScInstall {
     pub path: Option<String>,
     pub channel: Option<String>,
     pub detected: bool,
+    /// "manual" si le chemin vient d'un override choisi par l'utilisateur,
+    /// "auto" si auto-détecté (registre/chemins connus), None si rien trouvé.
+    pub source: Option<String>,
+}
+
+// ── Override manuel (chemin SC choisi par l'utilisateur) ─────────────────────
+// SOURCE DE VÉRITÉ : un petit fichier texte dans le dossier de config de l'app
+// (%APPDATA%\com.scmfd.desktop\sc_path_override.txt). resolve_sc_install() le lit
+// EN PREMIER : ainsi TOUTES les features qui passent déjà par resolve_sc_install
+// (détection, lecture actionmaps, dépôt SCMFD.xml) honorent l'override sans
+// changement de signature. Le chemin du fichier est fixé au démarrage (lib.rs)
+// depuis l'AppHandle, puis lu sans AppHandle au moment de la résolution.
+static OVERRIDE_FILE: OnceLock<PathBuf> = OnceLock::new();
+
+/// Fixe l'emplacement du fichier d'override (appelé une fois au setup Tauri).
+pub fn set_override_file(path: PathBuf) {
+    let _ = OVERRIDE_FILE.set(path);
+}
+
+/// Lit le chemin d'override brut persisté (sans valider). None si non défini.
+fn read_override_raw() -> Option<String> {
+    let file = OVERRIDE_FILE.get()?;
+    let txt = std::fs::read_to_string(file).ok()?;
+    let trimmed = txt.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
 }
 
 /// Un install valide possède Data.p4k à sa racine (même critère que V1/V2).
@@ -107,10 +137,9 @@ fn candidates_from_registry() -> Vec<(String, String)> {
     }
 }
 
-/// Cascade : registre puis chemins connus, triés par priorité de canal.
-/// Retourne le 1er install dont Data.p4k existe.
-/// `pub` : réutilisé par keybind_source pour localiser actionmaps.xml du joueur.
-pub fn resolve_sc_install() -> Option<(String, String)> {
+/// Auto-détection seule : cascade registre puis chemins connus, triés par
+/// priorité de canal. Retourne le 1er install dont Data.p4k existe.
+fn resolve_auto() -> Option<(String, String)> {
     let mut rest: Vec<(String, String)> = Vec::new();
     rest.extend(candidates_from_registry());
     rest.extend(hardcoded_candidates());
@@ -118,20 +147,90 @@ pub fn resolve_sc_install() -> Option<(String, String)> {
     rest.into_iter().find(|(p, _)| is_valid_install(p))
 }
 
-/// Commande exposée : détection (lecture pure). detected=false si rien trouvé
-/// (le frontend l'affiche, pas de chemin en dur trompeur).
-#[tauri::command]
-pub fn detect_sc_install() -> ScInstall {
-    match resolve_sc_install() {
-        Some((path, channel)) => ScInstall {
+/// Résolution complète avec origine. ORDRE DE PRIORITÉ (cf. cahier des charges) :
+///   (1) override manuel persisté s'il est défini ET valide (Data.p4k présent),
+///   (2) sinon auto-détection (registre / chemins connus).
+/// Un override défini mais devenu invalide (jeu déplacé) est ignoré → on retombe
+/// proprement sur l'auto-détection.
+fn resolve_full() -> Option<(String, Option<String>, &'static str)> {
+    if let Some(p) = read_override_raw() {
+        if is_valid_install(&p) {
+            let channel = detect_channel_from_path(&p).map(|c| c.to_string());
+            return Some((p, channel, "manual"));
+        }
+    }
+    resolve_auto().map(|(p, ch)| (p, Some(ch), "auto"))
+}
+
+/// Chemin SC résolu (override prioritaire, sinon auto). Point d'entrée unique
+/// réutilisé par keybind_source (actionmaps.xml joueur + dépôt SCMFD.xml).
+/// `pub` : tout le reste du backend passe par ici → l'override s'applique partout.
+pub fn resolve_sc_install() -> Option<(String, String)> {
+    resolve_full().map(|(p, ch, _)| (p, ch.unwrap_or_else(|| "LIVE".to_string())))
+}
+
+fn current_install() -> ScInstall {
+    match resolve_full() {
+        Some((path, channel, source)) => ScInstall {
             path: Some(path),
-            channel: Some(channel),
+            channel,
             detected: true,
+            source: Some(source.to_string()),
         },
         None => ScInstall {
             path: None,
             channel: None,
             detected: false,
+            source: None,
         },
     }
+}
+
+/// Commande exposée : détection (lecture pure). detected=false si rien trouvé
+/// (le frontend l'affiche, pas de chemin en dur trompeur).
+#[tauri::command]
+pub fn detect_sc_install() -> ScInstall {
+    current_install()
+}
+
+/// Définit l'override manuel. Valide le dossier choisi (Data.p4k à la racine) ;
+/// si invalide, renvoie Err SANS rien persister (le frontend affiche le message).
+/// En cas de succès, persiste le chemin et renvoie l'install résolu (source=manual).
+#[tauri::command]
+pub fn set_sc_override(path: String) -> Result<ScInstall, String> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err("Aucun dossier sélectionné.".to_string());
+    }
+    if !is_valid_install(trimmed) {
+        return Err(format!(
+            "Dossier invalide : Data.p4k introuvable dans « {trimmed} ». \
+             Choisissez le dossier d'un canal (ex. …\\StarCitizen\\LIVE)."
+        ));
+    }
+    let file = OVERRIDE_FILE
+        .get()
+        .ok_or_else(|| "Stockage de l'override indisponible.".to_string())?;
+    if let Some(parent) = file.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("création dossier config: {e}"))?;
+    }
+    std::fs::write(file, trimmed.as_bytes()).map_err(|e| format!("écriture override: {e}"))?;
+    Ok(current_install())
+}
+
+/// Supprime l'override manuel → retour à l'auto-détection. Renvoie l'install
+/// re-résolu (auto si une install est trouvée, sinon non détecté).
+#[tauri::command]
+pub fn clear_sc_override() -> ScInstall {
+    if let Some(file) = OVERRIDE_FILE.get() {
+        let _ = std::fs::remove_file(file);
+    }
+    current_install()
+}
+
+/// Renvoie le chemin d'override brut persisté (même s'il est devenu invalide),
+/// pour que le frontend puisse l'afficher / le signaler. None si pas d'override.
+#[tauri::command]
+pub fn get_sc_override() -> Option<String> {
+    read_override_raw()
 }
