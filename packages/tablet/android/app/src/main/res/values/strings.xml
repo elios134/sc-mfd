@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">sc-mfd-tablet</string>
+    <string name="title_activity_main">sc-mfd-tablet</string>
+    <string name="package_name">com.scmfd.tablet</string>
+    <string name="custom_url_scheme">com.scmfd.tablet</string>
+</resources>

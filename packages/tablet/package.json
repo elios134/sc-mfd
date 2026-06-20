@@ -11,6 +11,7 @@
     "cap": "cap"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
     "@capacitor/core": "^8",
     "@sc-mfd/shared": "*",
     "@tailwindcss/vite": "^4.3.0",

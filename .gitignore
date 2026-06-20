@@ -15,7 +15,8 @@ packages/desktop/src-tauri/packages/
 
 # Capacitor / mobile
 .expo/
-packages/tablet/android/
+# Le projet natif packages/tablet/android/ EST versionné ; ses artefacts de build
+# (build/, .gradle/, local.properties, *.apk) sont exclus par son propre .gitignore.
 packages/tablet/ios/
 
 # Logs
