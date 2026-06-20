@@ -13,6 +13,8 @@ import { Toggle } from "./components/Toggle";
 import { Stepper } from "./components/Stepper";
 import { ActionButton } from "./components/ActionButton";
 import type { ConnState } from "./useConnection";
+import { normalizeWsUrl } from "./useConnection";
+import { scanConnectionQr, looksLikeAddress } from "./qrScan";
 import { useThemeZone } from "./useThemeZone";
 import type { LoadoutMfdProps } from "./loadoutTypes";
 
@@ -110,6 +112,39 @@ export function ScfmMfd({
     },
     [sendCommand]
   );
+
+  // ── Scan QR : lit « ws://IP:port » du QR desktop → remplit le champ ET connecte.
+  // La saisie manuelle reste disponible : tout échec affiche un message et n'y touche pas.
+  const [scanning, setScanning] = useState(false);
+  const onScan = useCallback(async () => {
+    if (scanning) return;
+    setScanning(true);
+    try {
+      const res = await scanConnectionQr();
+      if (!res.ok) {
+        const msg =
+          res.reason === "denied"
+            ? "Caméra refusée — saisie manuelle"
+            : res.reason === "unsupported"
+            ? "Scan indisponible ici — saisie manuelle"
+            : res.reason === "empty"
+            ? "Scan annulé"
+            : "Échec du scan — saisie manuelle";
+        notify(msg);
+        return;
+      }
+      if (!looksLikeAddress(res.value)) {
+        notify("QR non reconnu — saisie manuelle");
+        return;
+      }
+      const url = normalizeWsUrl(res.value);
+      setAddress(url); // remplit le champ (visible/éditable en secours)
+      connect(url); // …ET connecte directement
+      notify("QR lu · connexion…");
+    } finally {
+      setScanning(false);
+    }
+  }, [scanning, notify, connect]);
 
   const suffix = (ok: boolean) => (ok ? "" : " · non connecté");
 
@@ -220,9 +255,20 @@ export function ScfmMfd({
             Déconnecter
           </button>
         ) : (
-          <button type="button" onClick={() => connect(address)}>
-            Connecter
-          </button>
+          <>
+            <button
+              type="button"
+              className="btn-scan"
+              onClick={onScan}
+              disabled={scanning}
+              title="Scanner le QR affiché par le bureau"
+            >
+              {scanning ? "Scan…" : "📷 Scanner"}
+            </button>
+            <button type="button" onClick={() => connect(address)}>
+              Connecter
+            </button>
+          </>
         )}
         <div className="conn-status">
           <span className={`led ${connState}`} />

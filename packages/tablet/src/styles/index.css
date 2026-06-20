@@ -148,6 +148,10 @@ body {
 .connbar button:active {
   background: var(--gold-glow);
 }
+.connbar button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
 .conn-status {
   flex: 0 0 auto;
   display: flex;

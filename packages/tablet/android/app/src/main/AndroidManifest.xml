@@ -34,9 +34,16 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- Scan QR (ML Kit) : précharge le module du code scanner via Play Services. -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui" />
     </application>
 
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Caméra : requise par le scan QR de connexion (@capacitor-mlkit/barcode-scanning). -->
+    <uses-permission android:name="android.permission.CAMERA" />
 </manifest>
