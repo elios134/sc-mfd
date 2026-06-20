@@ -48,4 +48,8 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Vibration : retour haptique au tap (@capacitor/haptics). -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Auto-découverte mDNS (capacitor-zeroconf/jmDNS) : le multicast lock exige
+         ces permissions, sinon la découverte échoue silencieusement. -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 </manifest>

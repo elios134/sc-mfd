@@ -18,6 +18,7 @@
     "@capacitor/haptics": "^8.0.2",
     "@sc-mfd/shared": "*",
     "@tailwindcss/vite": "^4.3.0",
+    "capacitor-zeroconf": "^4.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.3.0"

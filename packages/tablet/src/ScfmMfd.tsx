@@ -74,6 +74,7 @@ export function ScfmMfd({
   disconnect,
   sendCommand,
   vibrate,
+  discovering,
   onBack,
 }: LoadoutMfdProps) {
   const [screen, setScreen] = useState<MfdId>("energie");
@@ -276,8 +277,12 @@ export function ScfmMfd({
           </>
         )}
         <div className="conn-status">
-          <span className={`led ${connState}`} />
-          {connState === "error" ? connError ?? CONN_LABEL.error : CONN_LABEL[connState]}
+          <span className={`led ${discovering && connState === "disconnected" ? "connecting" : connState}`} />
+          {discovering && connState === "disconnected"
+            ? "Recherche du pont…"
+            : connState === "error"
+            ? connError ?? CONN_LABEL.error
+            : CONN_LABEL[connState]}
         </div>
       </div>
 

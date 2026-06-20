@@ -6,6 +6,7 @@ mod dynmap;
 mod input;
 mod keybind_source;
 mod keymap;
+mod mdns;
 mod sc_detect;
 mod server;
 
@@ -87,6 +88,9 @@ pub fn run() {
                 if minimize.0.load(Ordering::Relaxed) {
                     api.prevent_close();
                     let _ = window.hide();
+                } else {
+                    // Fermeture réelle : retire l'annonce mDNS du LAN (best-effort).
+                    mdns::stop();
                 }
             }
         })
@@ -115,7 +119,10 @@ pub fn run() {
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show" => show_main_window(app),
                     // « Quitter » : ferme vraiment, même en mode tray (bypass prevent_close).
-                    "quit" => app.exit(0),
+                    "quit" => {
+                        mdns::stop(); // retire l'annonce mDNS avant de quitter
+                        app.exit(0);
+                    }
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
@@ -135,6 +142,8 @@ pub fn run() {
             tray.build(app)?;
 
             server::start(app.handle().clone());
+            // Annonce mDNS (bonus auto-découverte) — best-effort, ne bloque pas.
+            mdns::start();
             Ok(())
         })
         .run(tauri::generate_context!())

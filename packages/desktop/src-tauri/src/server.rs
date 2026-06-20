@@ -148,7 +148,8 @@ struct ClientEvent {
 }
 
 /// IP LAN du desktop (pas d'IP en dur). Repli "0.0.0.0" si indéterminée.
-fn local_ip_string() -> String {
+/// `pub` : réutilisée par l'annonce mDNS (même IP que le QR / ws_url).
+pub fn local_ip_string() -> String {
     match local_ip_address::local_ip() {
         Ok(IpAddr::V4(v4)) => v4.to_string(),
         Ok(IpAddr::V6(v6)) => v6.to_string(),

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getThemeById } from "@sc-mfd/shared";
 import { useConnection } from "./useConnection";
 import { useThemeZone } from "./useThemeZone";
@@ -22,6 +22,7 @@ import {
   saveVibrate,
 } from "./settingsStorage";
 import { applyKeepAwake } from "./screenAwake";
+import { startBridgeDiscovery } from "./mdnsDiscovery";
 
 type Phase = "home" | "mfd";
 
@@ -50,6 +51,45 @@ export default function App() {
     setAutoReconnect(v);
     saveAutoReconnect(v);
   }, []);
+
+  // ── Auto-découverte mDNS (BONUS, best-effort) ──────────────────────────────
+  // Au démarrage, on écoute le pont sur le LAN et on se connecte SANS scan ni
+  // saisie. L'échec ne bloque jamais : après un court délai on affiche l'écran de
+  // connexion habituel (QR + manuel), toujours disponibles. `discovering` ne sert
+  // qu'à l'indicateur « Recherche… » ; la découverte continue en fond jusqu'à
+  // connexion, puis on arrête le watch.
+  const [discovering, setDiscovering] = useState(true);
+  const connStateRef = useRef(connState);
+  connStateRef.current = connState;
+  const stopDiscoveryRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    let cancelled = false;
+    void startBridgeDiscovery((wsUrl) => {
+      // Ne pas écraser une connexion déjà établie/en cours (scan, manuel, mDNS).
+      if (cancelled || connStateRef.current !== "disconnected") return;
+      connect(wsUrl);
+    }).then((s) => {
+      if (cancelled) s();
+      else stopDiscoveryRef.current = s;
+    });
+    // L'indicateur « Recherche… » s'efface après un délai raisonnable, même si la
+    // découverte continue en fond (réseau qui bloque le multicast = cas normal).
+    const t = window.setTimeout(() => setDiscovering(false), 6000);
+    return () => {
+      cancelled = true;
+      stopDiscoveryRef.current();
+      window.clearTimeout(t);
+    };
+  }, [connect]);
+
+  // Connecté (par n'importe quel moyen) → stoppe l'indicateur ET le watch mDNS.
+  useEffect(() => {
+    if (connState === "connected" || connState === "connecting") {
+      setDiscovering(false);
+      if (connState === "connected") stopDiscoveryRef.current();
+    }
+  }, [connState]);
 
   // Garder l'écran allumé : applique l'effet natif immédiatement (no-op en web).
   const toggleKeepAwake = useCallback((v: boolean) => {
@@ -118,6 +158,7 @@ export default function App() {
           disconnect={disconnect}
           sendCommand={sendCommand}
           vibrate={vibrate}
+          discovering={discovering}
           onBack={goHome}
         />
       ) : settingsOpen ? (
