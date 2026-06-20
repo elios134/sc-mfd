@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getThemeById } from "@sc-mfd/shared";
 import { useConnection } from "./useConnection";
 import { useThemeZone } from "./useThemeZone";
@@ -16,13 +16,12 @@ import { SettingsScreen } from "./SettingsScreen";
 import {
   loadAutoReconnect,
   saveAutoReconnect,
-  loadBrightness,
-  saveBrightness,
   loadKeepAwake,
   saveKeepAwake,
   loadVibrate,
   saveVibrate,
 } from "./settingsStorage";
+import { applyKeepAwake } from "./screenAwake";
 
 type Phase = "home" | "mfd";
 
@@ -32,9 +31,14 @@ export default function App() {
 
   // ── Réglages tablette ──
   const [autoReconnect, setAutoReconnect] = useState<boolean>(loadAutoReconnect);
-  const [brightness, setBrightness] = useState<number>(loadBrightness);
   const [keepAwake, setKeepAwake] = useState<boolean>(loadKeepAwake);
   const [vibrate, setVibrate] = useState<boolean>(loadVibrate);
+
+  // Applique « garder l'écran allumé » au démarrage selon la valeur persistée
+  // (no-op en web ; effet réel sur l'APK). Ne dépend que du montage.
+  useEffect(() => {
+    void applyKeepAwake(loadKeepAwake());
+  }, []);
 
   // Connexion WS tenue au niveau shell : survit aux allers-retours accueil ↔ MFD.
   // La reconnexion auto est gérée dans le hook selon le réglage.
@@ -47,21 +51,17 @@ export default function App() {
     saveAutoReconnect(v);
   }, []);
 
-  // Réglages natifs : UI + persistance maintenant ; effet natif différé au packaging.
-  const changeBrightness = useCallback((v: number) => {
-    setBrightness(v);
-    saveBrightness(v);
-    // TODO Capacitor: appliquer via @capacitor-community/screen-brightness (app installée).
-  }, []);
+  // Garder l'écran allumé : applique l'effet natif immédiatement (no-op en web).
   const toggleKeepAwake = useCallback((v: boolean) => {
     setKeepAwake(v);
     saveKeepAwake(v);
-    // TODO Capacitor: appliquer via @capacitor-community/keep-awake (KeepAwake.keepAwake/allowSleep).
+    void applyKeepAwake(v);
   }, []);
+  // Vibration au tap : pas d'effet ici ; le retour haptique est déclenché à l'appui
+  // des boutons d'action MFD (cf. ScfmMfd.send), selon ce réglage.
   const toggleVibrate = useCallback((v: boolean) => {
     setVibrate(v);
     saveVibrate(v);
-    // TODO Capacitor: déclencher un retour haptique via @capacitor/haptics à chaque tap.
   }, []);
 
   // ── Zone B : thème système (accueil, params, barres) ──
@@ -117,6 +117,7 @@ export default function App() {
           connect={connect}
           disconnect={disconnect}
           sendCommand={sendCommand}
+          vibrate={vibrate}
           onBack={goHome}
         />
       ) : settingsOpen ? (
@@ -128,8 +129,6 @@ export default function App() {
           connState={connState}
           autoReconnect={autoReconnect}
           onToggleAutoReconnect={toggleAutoReconnect}
-          brightness={brightness}
-          onBrightness={changeBrightness}
           keepAwake={keepAwake}
           onToggleKeepAwake={toggleKeepAwake}
           vibrate={vibrate}

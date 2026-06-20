@@ -1024,36 +1024,3 @@ body {
   left: 23px;
   background: var(--color-gold);
 }
-
-/* Slider (luminosité) */
-.range {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 150px;
-  max-width: 55%;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--color-panel2);
-  border: 1px solid var(--stroke);
-  outline: none;
-  flex-shrink: 0;
-}
-.range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--color-gold);
-  box-shadow: 0 0 8px var(--gold-glow);
-  cursor: pointer;
-}
-.range::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border: none;
-  border-radius: 50%;
-  background: var(--color-gold);
-  box-shadow: 0 0 8px var(--gold-glow);
-  cursor: pointer;
-}

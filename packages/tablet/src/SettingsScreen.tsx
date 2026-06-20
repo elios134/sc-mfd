@@ -29,8 +29,6 @@ type Props = {
   connState: ConnState;
   autoReconnect: boolean;
   onToggleAutoReconnect: (v: boolean) => void;
-  brightness: number;
-  onBrightness: (v: number) => void;
   keepAwake: boolean;
   onToggleKeepAwake: (v: boolean) => void;
   vibrate: boolean;
@@ -45,8 +43,6 @@ export function SettingsScreen({
   connState,
   autoReconnect,
   onToggleAutoReconnect,
-  brightness,
-  onBrightness,
   keepAwake,
   onToggleKeepAwake,
   vibrate,
@@ -91,33 +87,20 @@ export function SettingsScreen({
           <ThemeSelector value={systemThemeId} onSelect={onSelectSystemTheme} />
         </div>
 
-        {/* ── Affichage (réglages natifs : UI + persistance ; effet = TODO Capacitor) ── */}
+        {/* ── Affichage & retour (effets natifs : visibles sur l'app installée) ── */}
         <div className="sect">
           <div className="t">Affichage</div>
           <div className="row">
             <div className="info">
-              <b>Luminosité</b>
-              <small>Confort cockpit sombre</small>
-            </div>
-            <input
-              type="range"
-              className="range"
-              min={0}
-              max={100}
-              value={brightness}
-              onChange={(e) => onBrightness(Number(e.target.value))}
-              aria-label="Luminosité"
-            />
-          </div>
-          <div className="row">
-            <div className="info">
               <b>Garder l'écran allumé</b>
+              <small>Empêche la mise en veille pendant l'usage</small>
             </div>
             <Switch on={keepAwake} onChange={onToggleKeepAwake} />
           </div>
           <div className="row">
             <div className="info">
               <b>Vibration au tap</b>
+              <small>Retour haptique sur les boutons d'action</small>
             </div>
             <Switch on={vibrate} onChange={onToggleVibrate} />
           </div>

@@ -15,6 +15,7 @@ import { ActionButton } from "./components/ActionButton";
 import type { ConnState } from "./useConnection";
 import { normalizeWsUrl } from "./useConnection";
 import { scanConnectionQr, looksLikeAddress } from "./qrScan";
+import { tapFeedback } from "./haptics";
 import { useThemeZone } from "./useThemeZone";
 import type { LoadoutMfdProps } from "./loadoutTypes";
 
@@ -72,6 +73,7 @@ export function ScfmMfd({
   connect,
   disconnect,
   sendCommand,
+  vibrate,
   onBack,
 }: LoadoutMfdProps) {
   const [screen, setScreen] = useState<MfdId>("energie");
@@ -104,13 +106,16 @@ export function ScfmMfd({
   }, []);
 
   // Envoie via WS si connecté ; sinon comportement local (le caller l'indique).
+  // Retour haptique léger à chaque appui d'action MFD si le réglage est actif
+  // (couvre boutons, toggles et steppers — tous passent par ici ; pas la nav/params).
   const send = useCallback(
     (actionId: string): boolean => {
+      if (vibrate) void tapFeedback();
       const ok = sendCommand(actionId);
       console.log("command:", actionId, ok ? "→ ws (envoyé)" : "→ local (non connecté)");
       return ok;
     },
-    [sendCommand]
+    [sendCommand, vibrate]
   );
 
   // ── Scan QR : lit « ws://IP:port » du QR desktop → remplit le champ ET connecte.

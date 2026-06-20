@@ -46,4 +46,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Caméra : requise par le scan QR de connexion (@capacitor-mlkit/barcode-scanning). -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Vibration : retour haptique au tap (@capacitor/haptics). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 </manifest>

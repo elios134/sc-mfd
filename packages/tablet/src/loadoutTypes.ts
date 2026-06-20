@@ -13,6 +13,8 @@ export type LoadoutMfdProps = {
   connect: (address: string) => void;
   disconnect: () => void;
   sendCommand: (actionId: string) => boolean;
+  /** Réglage « vibration au tap » : si true, retour haptique léger sur les boutons d'action. */
+  vibrate: boolean;
   /** Retour à l'écran d'accueil (bouton haut-gauche de la vue MFD). */
   onBack: () => void;
 };
