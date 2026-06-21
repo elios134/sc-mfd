@@ -1,33 +1,49 @@
-// Stepper +/- (paire increase/decrease) — anime 5 pips, état local.
+// Stepper +/- (paire increase/decrease) — deux IMPULSIONS. Plus de jauge de pips :
+// l'app ne lit pas le niveau réel du jeu, une jauge serait trompeuse. Chaque bouton
+// envoie sa touche avec le même flash bref que les autres boutons MFD.
 
-const PIP_COUNT = 5;
+import { useFlash } from "./useFlash";
 
 export interface StepperProps {
   label: string;
-  /** Niveau affiché (0..5). */
-  level: number;
   onDec: () => void;
   onInc: () => void;
 }
 
-export function Stepper({ label, level, onDec, onInc }: StepperProps) {
+function StepButton({ onClick, ariaLabel, children }: {
+  onClick: () => void;
+  ariaLabel: string;
+  children: string;
+}) {
+  const [flashing, flash] = useFlash();
+  return (
+    <button
+      type="button"
+      className={`step-btn${flashing ? " flash" : ""}`}
+      onClick={() => {
+        flash();
+        onClick();
+      }}
+      aria-label={ariaLabel}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function Stepper({ label, onDec, onInc }: StepperProps) {
   return (
     <div className="stepper">
       <div className="row">
         <div className="name">{label}</div>
         <div className="ctl">
-          <button type="button" className="step-btn" onClick={onDec} aria-label={`${label} −`}>
+          <StepButton onClick={onDec} ariaLabel={`${label} −`}>
             −
-          </button>
-          <button type="button" className="step-btn" onClick={onInc} aria-label={`${label} +`}>
+          </StepButton>
+          <StepButton onClick={onInc} ariaLabel={`${label} +`}>
             +
-          </button>
+          </StepButton>
         </div>
-      </div>
-      <div className="pips">
-        {Array.from({ length: PIP_COUNT }).map((_, i) => (
-          <div key={i} className={`pip${i < level ? " fill" : ""}`} />
-        ))}
       </div>
     </div>
   );

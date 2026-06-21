@@ -21,8 +21,6 @@ export interface ToggleElement {
   actionIdOff?: string;
   /** Libellé d'affichage ; sinon labelFr de l'action est utilisé. */
   label?: string;
-  /** État initial (cosmétique, purement local). */
-  initialOn?: boolean;
 }
 
 /** Paire increase/decrease (ex moteur +/−). */
@@ -31,8 +29,6 @@ export interface StepperElement {
   label: string;
   incActionId: string;
   decActionId: string;
-  /** Niveau de pips initial (0..5, cosmétique). */
-  initialLevel?: number;
 }
 
 /** Bouton simple (impulsion). */
@@ -68,44 +64,39 @@ export const ENERGIE_GROUPS: LayoutGroup[] = [
     label: "Alimentation",
     columns: 4,
     elements: [
-      { kind: "toggle", actionId: "v_power_toggle", initialOn: true },
-      { kind: "toggle", actionId: "v_power_toggle_thrusters", initialOn: true },
-      { kind: "toggle", actionId: "v_power_toggle_shields", initialOn: true },
-      { kind: "toggle", actionId: "v_power_toggle_weapons", initialOn: false },
+      { kind: "toggle", actionId: "v_power_toggle" },
+      { kind: "toggle", actionId: "v_power_toggle_thrusters" },
+      { kind: "toggle", actionId: "v_power_toggle_shields" },
+      { kind: "toggle", actionId: "v_power_toggle_weapons" },
     ],
   },
   {
     label: "Répartition de puissance",
     columns: 2,
-    note: "⚠ Affichage indicatif — l'app envoie les commandes, ne lit pas l'état réel du jeu.",
     elements: [
       {
         kind: "stepper",
         label: "Moteurs",
         incActionId: "v_engineering_assignment_engine_increase",
         decActionId: "v_engineering_assignment_engine_decrease",
-        initialLevel: 2,
       },
       {
         kind: "stepper",
         label: "Boucliers",
         incActionId: "v_engineering_assignment_shields_increase",
         decActionId: "v_engineering_assignment_shields_decrease",
-        initialLevel: 1,
       },
       {
         kind: "stepper",
         label: "Armes",
         incActionId: "v_engineering_assignment_weapons_increase",
         decActionId: "v_engineering_assignment_weapons_decrease",
-        initialLevel: 1,
       },
       {
         kind: "stepper",
         label: "Refroidisseur",
         incActionId: "v_cooler_throttle_up",
         decActionId: "v_cooler_throttle_down",
-        initialLevel: 2,
       },
     ],
   },
@@ -114,8 +105,8 @@ export const ENERGIE_GROUPS: LayoutGroup[] = [
     columns: 3,
     elements: [
       // « Mode Quantum » = cycle du mode master (NAV ⇄ SCM) par appui long sur B.
-      // L'actionId pointe désormais vers v_master_mode_cycle_long (cf. shared).
-      { kind: "toggle", actionId: "v_master_mode_cycle_long", label: "Mode Quantum" },
+      // C'est un CYCLE, pas un état binaire → bouton d'action (impulsion), pas un toggle.
+      { kind: "action", actionId: "v_master_mode_cycle_long", label: "Mode Quantum", cta: "Cycler" },
       { kind: "action", actionId: "v_atc_request", cta: "Demander" },
       { kind: "action", actionId: "v_invoke_docking", cta: "Demander" },
     ],
@@ -133,14 +124,13 @@ export const CONFIG_FILTERS: ConfigFilterTab[] = [
         columns: 4,
         elements: [
           { kind: "toggle", actionId: "v_ifcs_vector_decoupling_toggle" },
-          { kind: "toggle", actionId: "v_ifcs_throttle_swap_mode", initialOn: true },
+          { kind: "toggle", actionId: "v_ifcs_throttle_swap_mode" },
           // G-Safe : le jeu a DEUX commandes (on/off) — on/off -> deux actionId.
           {
             kind: "toggle",
             actionId: "v_ifcs_gsafe_on",
             actionIdOff: "v_ifcs_gsafe_off",
             label: "G-Safe",
-            initialOn: true,
           },
           { kind: "toggle", actionId: "v_ifcs_toggle_esp" },
         ],
@@ -157,7 +147,6 @@ export const CONFIG_FILTERS: ConfigFilterTab[] = [
             label: "Limiteur",
             incActionId: "v_ifcs_speed_limiter_increment",
             decActionId: "v_ifcs_speed_limiter_decrement",
-            initialLevel: 3,
           },
         ],
       },
@@ -180,8 +169,8 @@ export const CONFIG_FILTERS: ConfigFilterTab[] = [
         columns: 4,
         elements: [
           { kind: "toggle", actionId: "v_weapon_gimbals_state_toggle" },
-          { kind: "toggle", actionId: "v_weapon_pip_prec_line_toggle", initialOn: true },
-          { kind: "toggle", actionId: "v_weapon_pip_toggle_lead_lag", initialOn: true },
+          { kind: "toggle", actionId: "v_weapon_pip_prec_line_toggle" },
+          { kind: "toggle", actionId: "v_weapon_pip_toggle_lead_lag" },
           { kind: "toggle", actionId: "v_weapon_pip_fade_toggle" },
         ],
       },
@@ -204,7 +193,7 @@ export const CONFIG_FILTERS: ConfigFilterTab[] = [
         columns: 2,
         note: "Un seul toggle « HUD avancé » dans le jeu — il s'applique au mode courant (SCM ou NAV).",
         elements: [
-          { kind: "toggle", actionId: "v_flight_advanced_hud_toggle", initialOn: true },
+          { kind: "toggle", actionId: "v_flight_advanced_hud_toggle" },
           // Cast MFD : gauche/droite = deux commandes distinctes -> deux boutons action.
           { kind: "action", actionId: "v_mfd_soft_select_cast_left_short", label: "Cast gauche", cta: "Caster" },
           { kind: "action", actionId: "v_mfd_soft_select_cast_right_short", label: "Cast droite", cta: "Caster" },

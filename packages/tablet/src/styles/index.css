@@ -311,17 +311,19 @@ body {
   color: var(--color-muted);
   white-space: nowrap;
 }
-.btn.on {
-  border-color: var(--amber-line);
-  background: linear-gradient(180deg, var(--gold-glow), var(--color-panel));
+/* Flash d'appui (« touche envoyée ») — bref pulse doré, non persistant.
+   Cohérent sur tous les boutons MFD : .btn (ex-toggles/actions), .big-action, .step-btn. */
+@keyframes btn-flash {
+  from {
+    background-color: var(--gold-glow);
+    border-color: var(--color-gold);
+    box-shadow: 0 0 16px var(--gold-glow);
+  }
 }
-.btn.on .lbl {
-  color: var(--color-gold);
-}
-.btn.on .state {
-  color: #0a0c0f;
-  background: var(--color-gold);
-  border-color: var(--color-gold);
+.btn.flash,
+.big-action.flash,
+.step-btn.flash {
+  animation: btn-flash 0.22s ease-out;
 }
 
 /* ===== Stepper (répartition de puissance) ===== */
@@ -365,21 +367,6 @@ body {
 .step-btn:active {
   transform: scale(0.9);
   background: var(--gold-glow);
-}
-.pips {
-  display: flex;
-  gap: 4px;
-  margin-top: 11px;
-}
-.pip {
-  flex: 1;
-  height: 7px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.07);
-}
-.pip.fill {
-  background: var(--color-gold);
-  box-shadow: 0 0 8px var(--gold-glow);
 }
 .blind-note {
   font-size: 9px;

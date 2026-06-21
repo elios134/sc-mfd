@@ -195,7 +195,7 @@ export const ACTIONS: MfdAction[] = [
   },
   {
     id: "v_ifcs_throttle_swap_mode",
-    labelFr: "Croisière",
+    labelFr: "Régulateur",
     labelEn: "Cruise (throttle swap)",
     mfd: "config",
     filter: "vol",

@@ -19,8 +19,6 @@ import { tapFeedback } from "./haptics";
 import { useThemeZone } from "./useThemeZone";
 import type { LoadoutMfdProps } from "./loadoutTypes";
 
-const PIP_MAX = 5;
-
 const NAV: { id: MfdId; ico: string; t: string }[] = [
   { id: "energie", ico: "⚡", t: "Énergie" },
   { id: "config", ico: "⚙", t: "Config" },
@@ -33,33 +31,6 @@ const CONN_LABEL: Record<ConnState, string> = {
   connected: "Connecté",
   error: "Erreur",
 };
-
-// Tous les groupes, pour initialiser l'état local des toggles/steppers.
-const ALL_GROUPS: LayoutGroup[] = [
-  ...ENERGIE_GROUPS,
-  ...CONFIG_FILTERS.flatMap((f) => f.groups),
-  ...DIAGNOSTIC_GROUPS,
-];
-
-function buildInitialToggles(): Record<string, boolean> {
-  const state: Record<string, boolean> = {};
-  for (const g of ALL_GROUPS) {
-    for (const el of g.elements) {
-      if (el.kind === "toggle") state[el.actionId] = Boolean(el.initialOn);
-    }
-  }
-  return state;
-}
-
-function buildInitialLevels(): Record<string, number> {
-  const state: Record<string, number> = {};
-  for (const g of ALL_GROUPS) {
-    for (const el of g.elements) {
-      if (el.kind === "stepper") state[el.incActionId] = el.initialLevel ?? 0;
-    }
-  }
-  return state;
-}
 
 /**
  * UI MFD « SCFM » (style ambre/gold maison) — l'interface MFD historique,
@@ -79,11 +50,13 @@ export function ScfmMfd({
 }: LoadoutMfdProps) {
   const [screen, setScreen] = useState<MfdId>("energie");
   const [filter, setFilter] = useState<ConfigFilter>("vol");
-  const [toggles, setToggles] = useState<Record<string, boolean>>(buildInitialToggles);
-  const [levels, setLevels] = useState<Record<string, number>>(buildInitialLevels);
   const [toast, setToast] = useState<{ msg: string; show: boolean }>({ msg: "", show: false });
   const toastTimer = useRef<number | null>(null);
   const [address, setAddress] = useState("");
+  // Alternance interne (PAS d'affichage) pour les rares boutons à DEUX commandes
+  // distinctes on/off (ex G-Safe) : sans état visible, on alterne juste quelle
+  // touche envoyer. Aucune prétention de refléter l'état réel du vaisseau.
+  const altRef = useRef<Record<string, boolean>>({});
 
   // Zone C : thème des MFD posé sur le conteneur .mfd-view (jamais :root) →
   // couvre TOUTE la vue MFD (bouton retour, connbar, boutons ET footer nav),
@@ -152,26 +125,30 @@ export function ScfmMfd({
     }
   }, [scanning, notify, connect]);
 
-  const suffix = (ok: boolean) => (ok ? "" : " · non connecté");
+  // Retour d'appui NEUTRE (pas de ON/OFF qui prétendrait à un état du vaisseau).
+  const feedback = (ok: boolean) => (ok ? "envoyé" : "non connecté");
 
   const onToggle = useCallback(
     (actionId: string, actionIdOff: string | undefined, label: string) => {
-      const next = !toggles[actionId];
-      const ok = send(next ? actionId : actionIdOff ?? actionId);
-      notify(`${label} · ${next ? "ON" : "OFF"}${suffix(ok)}`);
-      setToggles((prev) => ({ ...prev, [actionId]: next }));
+      // Commande unique : envoie sa touche (le jeu, lui, bascule son état réel).
+      // Commande double on/off (actionIdOff) : alterne quelle touche envoyer,
+      // sans aucun affichage d'état (alternance interne uniquement).
+      let sendId = actionId;
+      if (actionIdOff) {
+        const wasOn = altRef.current[actionId] ?? false;
+        sendId = wasOn ? actionIdOff : actionId;
+        altRef.current[actionId] = !wasOn;
+      }
+      const ok = send(sendId);
+      notify(`${label} · ${feedback(ok)}`);
     },
-    [toggles, send, notify]
+    [send, notify]
   );
 
   const onStep = useCallback(
     (incId: string, decId: string, dir: 1 | -1, label: string) => {
       const ok = send(dir > 0 ? incId : decId);
-      notify(`${label} ${dir > 0 ? "+1" : "−1"}${suffix(ok)}`);
-      setLevels((prev) => {
-        const current = prev[incId] ?? 0;
-        return { ...prev, [incId]: Math.max(0, Math.min(PIP_MAX, current + dir)) };
-      });
+      notify(`${label} ${dir > 0 ? "+" : "−"} · ${feedback(ok)}`);
     },
     [send, notify]
   );
@@ -179,7 +156,7 @@ export function ScfmMfd({
   const onAction = useCallback(
     (actionId: string, label: string) => {
       const ok = send(actionId);
-      notify(`${label} · ${ok ? "envoyé" : "non connecté"}`);
+      notify(`${label} · ${feedback(ok)}`);
     },
     [send, notify]
   );
@@ -198,7 +175,6 @@ export function ScfmMfd({
                   key={el.actionId}
                   label={label}
                   hint={hint}
-                  on={Boolean(toggles[el.actionId])}
                   onClick={() => onToggle(el.actionId, el.actionIdOff, label)}
                 />
               );
@@ -208,7 +184,6 @@ export function ScfmMfd({
                 <Stepper
                   key={el.incActionId}
                   label={el.label}
-                  level={levels[el.incActionId] ?? 0}
                   onDec={() => onStep(el.incActionId, el.decActionId, -1, el.label)}
                   onInc={() => onStep(el.incActionId, el.decActionId, 1, el.label)}
                 />
@@ -231,7 +206,7 @@ export function ScfmMfd({
         {group.note ? <div className="blind-note">{group.note}</div> : null}
       </div>
     ),
-    [levels, toggles, onAction, onStep, onToggle]
+    [onAction, onStep, onToggle]
   );
 
   const activeFilter = useMemo(
