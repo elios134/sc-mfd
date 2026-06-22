@@ -24,8 +24,8 @@ export interface KeyBind {
   modifiers: Modifier[];
 }
 
-/** Les écrans MFD de l'application. */
-export type MfdId = "energie" | "config" | "diagnostic";
+/** Les écrans MFD de l'application. (`bouclier` et `missiles` = écrans ajoutés pour la 2e UI / variante B.) */
+export type MfdId = "energie" | "config" | "diagnostic" | "bouclier" | "missiles";
 
 /**
  * Sous-groupe de l'écran `config` (pills Vol / Armes / HUD de la maquette).

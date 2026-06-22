@@ -4,6 +4,10 @@ import {
   CONFIG_FILTERS,
   DIAGNOSTIC_GROUPS,
   ENERGIE_GROUPS,
+  MISSILES_GROUPS,
+  PERSISTENT_BUTTONS,
+  SHIELD_FACES,
+  SHIELD_RESET_ACTION,
   findUnresolvedActionIds,
   labelEn,
   labelFr,
@@ -21,7 +25,9 @@ import type { LoadoutMfdProps } from "./loadoutTypes";
 
 const NAV: { id: MfdId; ico: string; t: string }[] = [
   { id: "energie", ico: "⚡", t: "Énergie" },
+  { id: "bouclier", ico: "🛡", t: "Bouclier" },
   { id: "config", ico: "⚙", t: "Config" },
+  { id: "missiles", ico: "🚀", t: "Missiles" },
   { id: "diagnostic", ico: "🛠", t: "Diag" },
 ];
 
@@ -262,7 +268,45 @@ export function ScfmMfd({
       </div>
 
       <div className="stage">
+        {/* Boutons persistants (présents sur chaque écran) — déclencheurs + flash. */}
+        <div className="persistent-bar">
+          {PERSISTENT_BUTTONS.map((b) => (
+            <ActionButton
+              key={b.actionId}
+              label={b.label}
+              cta="↦"
+              onClick={() => onAction(b.actionId, b.label)}
+            />
+          ))}
+        </div>
+
         {screen === "energie" && ENERGIE_GROUPS.map((g, i) => renderGroup(g, `en-${i}`))}
+
+        {screen === "bouclier" && (
+          <div className="group">
+            <div className="group-label">Boucliers · directionnel</div>
+            <div className="shield-pad">
+              {SHIELD_FACES.map((f) => (
+                <div key={f.actionId} className={`sp-${f.dir.slice(0, 2)}`}>
+                  <ActionButton
+                    label={f.label}
+                    cta="+"
+                    onClick={() => onAction(f.actionId, `Bouclier ${f.label}`)}
+                  />
+                </div>
+              ))}
+              <div className="sp-rs">
+                <ActionButton
+                  label="Reset"
+                  cta="↺"
+                  onClick={() => onAction(SHIELD_RESET_ACTION, "Réinitialiser boucliers")}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {screen === "missiles" && MISSILES_GROUPS.map((g, i) => renderGroup(g, `mis-${i}`))}
 
         {screen === "config" && (
           <>

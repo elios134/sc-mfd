@@ -1,5 +1,6 @@
 import type { Loadout } from "./loadoutTypes";
 import { ScfmMfd } from "./ScfmMfd";
+import { GlassMfd } from "./GlassMfd";
 
 // Catalogue des loadouts. Pour en ajouter un : nouvelle entrée + composant MFD.
 export const LOADOUTS: Loadout[] = [
@@ -12,12 +13,12 @@ export const LOADOUTS: Loadout[] = [
     Mfd: ScfmMfd,
   },
   {
-    id: "mfd-authentique",
-    name: "MFD authentique",
-    description: "Look fidèle au jeu · bientôt disponible",
-    available: false,
-    defaultThemeId: "aegis",
-    // Pas d'UI : placeholder grisé tant que non disponible.
+    id: "variante-b",
+    name: "Variante B",
+    description: "Interface verre / doux · écrans translucides, glow",
+    available: true,
+    defaultThemeId: "origin",
+    Mfd: GlassMfd,
   },
 ];
 
