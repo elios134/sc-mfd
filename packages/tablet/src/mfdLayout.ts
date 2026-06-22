@@ -205,18 +205,18 @@ export const ENERGIE_SYSTEMS: EnergieSystem[] = [
     powerToggleId: "v_power_toggle_weapons",
   },
   {
-    key: "boucliers",
-    label: "BOUCLIERS",
-    incActionId: "v_engineering_assignment_shields_increase",
-    decActionId: "v_engineering_assignment_shields_decrease",
-    powerToggleId: "v_power_toggle_shields",
-  },
-  {
     key: "propulsion",
     label: "PROPULSION",
     incActionId: "v_engineering_assignment_engine_increase",
     decActionId: "v_engineering_assignment_engine_decrease",
     powerToggleId: "v_power_toggle_thrusters",
+  },
+  {
+    key: "boucliers",
+    label: "BOUCLIERS",
+    incActionId: "v_engineering_assignment_shields_increase",
+    decActionId: "v_engineering_assignment_shields_decrease",
+    powerToggleId: "v_power_toggle_shields",
   },
 ];
 
