@@ -26,6 +26,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Docs / livrables de travail (audits datamining, rapports, maquettes locales)
+docs/
+
 # Editor / OS
 .vscode/*
 !.vscode/extensions.json
