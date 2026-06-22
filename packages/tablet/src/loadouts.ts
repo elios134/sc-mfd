@@ -1,25 +1,26 @@
 import type { Loadout } from "./loadoutTypes";
-import { ScfmMfd } from "./ScfmMfd";
+import { CompanionMfd } from "./CompanionMfd";
 import { GlassMfd } from "./GlassMfd";
 
 // Catalogue des loadouts. Pour en ajouter un : nouvelle entrée + composant MFD.
 export const LOADOUTS: Loadout[] = [
   {
+    // id "scfm" conservé (clés de thème/sélection persistées) — l'UI « SCFM » est la
+    // reproduction de la maquette Figma (CompanionMfd), qui remplace l'ancienne ScfmMfd.
     id: "scfm",
     name: "SCFM",
-    description: "Style maison · cartes et grille",
+    description: "Verre dépoli · dock flottant, halos",
     available: true,
     defaultThemeId: "aegis",
     preview: "scfm",
-    Mfd: ScfmMfd,
+    Mfd: CompanionMfd,
   },
   {
-    // id conservé (clés de thème/sélection persistées) — seul le nom affiché change.
     id: "variante-b",
     name: "SC UI",
     description: "Interface verre · panneaux translucides",
     available: true,
-    defaultThemeId: "origin",
+    defaultThemeId: "rsi",
     preview: "glass",
     Mfd: GlassMfd,
   },

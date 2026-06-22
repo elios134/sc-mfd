@@ -31,7 +31,7 @@ export type MfdId = "energie" | "config" | "bouclier" | "missiles";
  * Sous-groupe de l'écran `config` (pills Vol / Armes / HUD de la maquette).
  * `null` pour toute action hors de l'écran config.
  */
-export type ConfigFilter = "vol" | "armes" | "hud";
+export type ConfigFilter = "vol" | "armes";
 
 /**
  * État de la liaison touche d'une action.

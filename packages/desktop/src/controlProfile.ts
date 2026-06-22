@@ -34,8 +34,6 @@ interface KeybindSources {
 // contexte SC (structurel au jeu) ; les TOUCHES, elles, viennent de shared
 // (source unique). Une entrée ici = une action injectée dans le control-profile.
 const ACTIONMAP_OF: Record<string, string> = {
-  v_cooler_throttle_up: "spaceship_general",
-  v_cooler_throttle_down: "spaceship_general",
   v_ifcs_speed_limiter_increment: "spaceship_movement",
   v_ifcs_speed_limiter_decrement: "spaceship_movement",
   v_ifcs_gsafe_on: "spaceship_movement",
@@ -46,15 +44,14 @@ const ACTIONMAP_OF: Record<string, string> = {
   v_weapon_pip_fade_toggle: "spaceship_weapons",
   v_weapon_pip_combination_type_set_single: "spaceship_weapons",
   v_weapon_staggered_fire_toggle: "spaceship_weapons",
-  v_flight_advanced_hud_toggle: "spaceship_movement",
-  v_mfd_soft_select_cast_left_short: "vehicle_mfd",
-  v_mfd_soft_select_cast_right_short: "vehicle_mfd",
   // + actions ajoutées pour la 2e UI (variante B).
   v_shield_raise_level_forward: "spaceship_defensive",
   v_shield_raise_level_back: "spaceship_defensive",
   v_shield_raise_level_left: "spaceship_defensive",
   v_shield_raise_level_right: "spaceship_defensive",
   v_shield_reset_level: "spaceship_defensive",
+  // Contre-mesures : seul le tir en catastrophe est non assigné par défaut → injecté.
+  v_weapon_countermeasure_decoy_launch_panic: "spaceship_defensive",
   v_ifcs_gravity_compensation_toggle: "spaceship_movement",
   v_auto_precision_mode_toggle: "spaceship_movement",
   v_ifcs_toggle_gforce_safety: "spaceship_movement",

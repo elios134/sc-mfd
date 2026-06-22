@@ -92,12 +92,6 @@ export const ENERGIE_GROUPS: LayoutGroup[] = [
         incActionId: "v_engineering_assignment_weapons_increase",
         decActionId: "v_engineering_assignment_weapons_decrease",
       },
-      {
-        kind: "stepper",
-        label: "Refroidisseur",
-        incActionId: "v_cooler_throttle_up",
-        decActionId: "v_cooler_throttle_down",
-      },
       // Reset de la répartition (touche jeu réelle f8) — déclencheur, pas d'état.
       { kind: "action", actionId: "v_engineering_assignment_reset", label: "Réinitialiser", cta: "Reset" },
     ],
@@ -136,14 +130,6 @@ export const CONFIG_FILTERS: ConfigFilterTab[] = [
           { kind: "toggle", actionId: "v_ifcs_speed_limiter_toggle", label: "Limiteur" },
         ],
       },
-      {
-        label: "Éclairage",
-        columns: 2,
-        elements: [
-          { kind: "toggle", actionId: "v_lights" },
-          { kind: "toggle", actionId: "v_light_amplification_toggle" },
-        ],
-      },
     ],
   },
   {
@@ -171,23 +157,6 @@ export const CONFIG_FILTERS: ConfigFilterTab[] = [
       },
     ],
   },
-  {
-    id: "hud",
-    label: "HUD",
-    groups: [
-      {
-        label: "Modes HUD",
-        columns: 2,
-        note: "Un seul toggle « HUD avancé » dans le jeu — il s'applique au mode courant (SCM ou NAV).",
-        elements: [
-          { kind: "toggle", actionId: "v_flight_advanced_hud_toggle", label: "HUD avancé" },
-          // Cast MFD : gauche/droite = deux commandes distinctes -> deux boutons action.
-          { kind: "action", actionId: "v_mfd_soft_select_cast_left_short", label: "Cast gauche", cta: "Caster" },
-          { kind: "action", actionId: "v_mfd_soft_select_cast_right_short", label: "Cast droite", cta: "Caster" },
-        ],
-      },
-    ],
-  },
 ];
 
 // ===================== ÉCRAN BOUCLIERS =====================
@@ -206,6 +175,15 @@ export const SHIELD_FACES: ShieldFace[] = [
   { dir: "tribord", label: "Tribord", actionId: "v_shield_raise_level_right" },
 ];
 export const SHIELD_RESET_ACTION = "v_shield_reset_level";
+
+// Contre-mesures (à droite du renforcement directionnel) — actions réelles de shared.
+export const SHIELD_COUNTERMEASURES = {
+  decoyLaunch: "v_weapon_countermeasure_decoy_launch",
+  noiseLaunch: "v_weapon_countermeasure_noise_launch",
+  burstIncId: "v_weapon_countermeasure_decoy_burst_increase",
+  burstDecId: "v_weapon_countermeasure_decoy_burst_decrease",
+  panicId: "v_weapon_countermeasure_decoy_launch_panic",
+} as const;
 
 // ===================== ÉCRAN ÉNERGIE — vue « colonnes » (variante B) =====================
 // 3 systèmes en colonnes (maquette variante B) : +/− = répartition de puissance,
@@ -281,15 +259,21 @@ export const MISSILES_GROUPS: LayoutGroup[] = [
   },
 ];
 
-// ===================== BOUTONS PERSISTANTS (présents sur chaque écran) =====================
-// Master Mode = appui LONG (cycle NAV⇄SCM) ; Atterrissage = train (tap N) ;
-// Amarrage = appui long N. L'activation réelle vient de shared (champ activation).
+// ===================== BOUTONS PERSISTANTS (toujours visibles sur chaque écran) =====================
+// Phares · Master Mode (au milieu, appui LONG) · Amplification lumineuse.
+// Atterrissage/Amarrage ne sont plus persistants → déplacés sur l'écran Énergie (LANDING_DOCKING).
 export interface PersistentButton {
   actionId: string;
   label: string;
 }
 export const PERSISTENT_BUTTONS: PersistentButton[] = [
+  { actionId: "v_lights", label: "Phares" },
   { actionId: "v_master_mode_cycle_long", label: "Master Mode" },
+  { actionId: "v_light_amplification_toggle", label: "Amplification lumineuse" },
+];
+
+// Atterrissage / Amarrage — déplacés des boutons persistants vers l'écran Énergie.
+export const LANDING_DOCKING: PersistentButton[] = [
   { actionId: "v_toggle_landing_system", label: "Atterrissage" },
   { actionId: "v_invoke_docking", label: "Amarrage" },
 ];
@@ -318,7 +302,9 @@ function referencedActionIds(): string[] {
   collect(MISSILES_GROUPS);
   SHIELD_FACES.forEach((f) => ids.push(f.actionId));
   ids.push(SHIELD_RESET_ACTION);
+  ids.push(...Object.values(SHIELD_COUNTERMEASURES));
   PERSISTENT_BUTTONS.forEach((b) => ids.push(b.actionId));
+  LANDING_DOCKING.forEach((b) => ids.push(b.actionId));
   ENERGIE_SYSTEMS.forEach((s) => ids.push(s.incActionId, s.decActionId, s.powerToggleId));
   return ids;
 }

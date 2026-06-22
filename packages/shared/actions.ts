@@ -10,7 +10,7 @@
 //   delayed_press/delayed_hold (appui maintenu jusqu'au seuil), "hold" = all /
 //   onPress+onRelease (maintenu continu). L'émulation (chantier B) s'en sert.
 //
-// Choix de structure (assignations d'ingénierie & refroidisseur) :
+// Choix de structure (assignations d'ingénierie) :
 //   Les commandes à deux sens (increase/decrease, up/down) sont modélisées
 //   comme DEUX actions distinctes plutôt qu'une action à double touche.
 //   Raison : `MfdAction.bind` reste une seule `KeyBind`, et le protocole garde
@@ -131,26 +131,6 @@ export const ACTIONS: MfdAction[] = [
     filter: null,
     bind: { key: "f8", modifiers: [] },
     status: "default",
-    activation: "press",
-  },
-  {
-    id: "v_cooler_throttle_up",
-    labelFr: "Refroidisseur +",
-    labelEn: "Cooler +",
-    mfd: "energie",
-    filter: null,
-    bind: { key: "f1", modifiers: ["rctrl"] },
-    status: "profile",
-    activation: "press",
-  },
-  {
-    id: "v_cooler_throttle_down",
-    labelFr: "Refroidisseur −",
-    labelEn: "Cooler −",
-    mfd: "energie",
-    filter: null,
-    bind: { key: "f2", modifiers: ["rctrl"] },
-    status: "profile",
     activation: "press",
   },
 
@@ -442,38 +422,6 @@ export const ACTIONS: MfdAction[] = [
     activation: "press",
   },
 
-  // ===== CONFIG / HUD =====
-  {
-    id: "v_flight_advanced_hud_toggle",
-    labelFr: "HUD avancé",
-    labelEn: "Advanced HUD",
-    mfd: "config",
-    filter: "hud",
-    bind: { key: "k", modifiers: ["rctrl"] },
-    status: "profile",
-    activation: "press",
-  },
-  {
-    id: "v_mfd_soft_select_cast_left_short",
-    labelFr: "Cast MFD gauche",
-    labelEn: "MFD soft select left",
-    mfd: "config",
-    filter: "hud",
-    bind: { key: "o", modifiers: ["rctrl"] },
-    status: "profile",
-    activation: "press",
-  },
-  {
-    id: "v_mfd_soft_select_cast_right_short",
-    labelFr: "Cast MFD droite",
-    labelEn: "MFD soft select right",
-    mfd: "config",
-    filter: "hud",
-    bind: { key: "p", modifiers: ["rctrl"] },
-    status: "profile",
-    activation: "press",
-  },
-
   // ===== BOUCLIER (écran ajouté pour la 2e UI / variante B) =====
   // Touches rctrl+pavé numérique = orientation des faces (8 avant, 2 arrière,
   // 4 bâbord, 6 tribord, 5 centre = reset). Toutes « non assigné » dans SC.
@@ -524,6 +472,60 @@ export const ACTIONS: MfdAction[] = [
     mfd: "bouclier",
     filter: null,
     bind: { key: "np_5", modifiers: ["rctrl"] },
+    status: "profile",
+    activation: "press",
+  },
+
+  // ===== CONTRE-MESURES (écran Boucliers) =====
+  // Touches RÉELLES du jeu (audit defaultProfile) sauf le tir en catastrophe,
+  // non assigné par défaut → touche profil rctrl+f1 (f1 libéré par le retrait du refroidisseur).
+  {
+    id: "v_weapon_countermeasure_decoy_launch",
+    labelFr: "Leurres",
+    labelEn: "Launch decoy",
+    mfd: "bouclier",
+    filter: null,
+    bind: { key: "h", modifiers: [] },
+    status: "default",
+    activation: "press",
+  },
+  {
+    id: "v_weapon_countermeasure_noise_launch",
+    labelFr: "Brouillage",
+    labelEn: "Launch noise",
+    mfd: "bouclier",
+    filter: null,
+    bind: { key: "j", modifiers: [] },
+    status: "default",
+    activation: "press",
+  },
+  {
+    id: "v_weapon_countermeasure_decoy_burst_increase",
+    labelFr: "Rafale +",
+    labelEn: "Decoy burst +",
+    mfd: "bouclier",
+    filter: null,
+    bind: { key: "h", modifiers: ["ralt"] },
+    status: "default",
+    activation: "press",
+  },
+  {
+    id: "v_weapon_countermeasure_decoy_burst_decrease",
+    labelFr: "Rafale −",
+    labelEn: "Decoy burst −",
+    mfd: "bouclier",
+    filter: null,
+    bind: { key: "h", modifiers: ["lalt"] },
+    status: "default",
+    activation: "press",
+  },
+  {
+    id: "v_weapon_countermeasure_decoy_launch_panic",
+    labelFr: "Tir de catastrophe",
+    labelEn: "Panic decoy launch",
+    mfd: "bouclier",
+    filter: null,
+    bind: { key: "f1", modifiers: ["rctrl"] },
     status: "profile",
     activation: "press",
   },
