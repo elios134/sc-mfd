@@ -1,14 +1,14 @@
-// Vue DEBUG TEMPORAIRE (chantier C2) — affiche le mapping dynamique lu
-// (action → touche réelle du joueur) pour contrôle visuel. À retirer en C3
-// une fois la lecture validée. Styles inline pour ne pas toucher au CSS.
+// Modale « Mapping dynamique » (DA V2, full Tailwind) : affiche le mapping lu
+// (action → touche réelle du joueur) transmis à l'émulation. Ouverte depuis les
+// Paramètres → section « Mapping dynamique ».
 
 import type { ProfileReadResult, ResolvedBind } from "./profileReader";
 import { formatKey } from "./profileReader";
 
-const sourceColor: Record<ResolvedBind["source"], string> = {
-  joueur: "#7CFC9B",
-  défaut: "#9BC7FF",
-  "à assigner": "#FFC56B",
+const sourceClass: Record<ResolvedBind["source"], string> = {
+  joueur: "text-emerald-300",
+  défaut: "text-sky-300",
+  "à assigner": "text-amber-300",
 };
 
 export function ProfileDebugPanel({
@@ -20,105 +20,123 @@ export function ProfileDebugPanel({
   onClose: () => void;
   onRefresh: () => void;
 }) {
+  const counts = result
+    ? {
+        joueur: result.binds.filter((b) => b.source === "joueur").length,
+        défaut: result.binds.filter((b) => b.source === "défaut").length,
+        àAssigner: result.binds.filter((b) => b.source === "à assigner").length,
+      }
+    : null;
+
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(8,10,14,0.92)",
-        zIndex: 9999,
-        overflow: "auto",
-        padding: "16px 20px",
-        font: "12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace",
-        color: "#e6e9ef",
-      }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm"
+      onClick={onClose}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-        <strong style={{ fontSize: 14 }}>🔑 Mapping dynamique (debug C3a)</strong>
-        <button
-          type="button"
-          onClick={onRefresh}
-          style={{ marginLeft: "auto", cursor: "pointer" }}
-          title="Relire les fichiers SC et retransmettre à l'émulation"
-        >
-          ↻ Recharger
-        </button>
-        <button type="button" onClick={onClose} style={{ cursor: "pointer" }}>
-          ✕ Fermer
-        </button>
-      </div>
-
-      {result == null ? (
-        <div>Lecture en cours…</div>
-      ) : (
-        <>
-          <div style={{ marginBottom: 8, opacity: 0.85 }}>
-            <div>
-              Joueur : {result.playerFound ? "✅" : "❌"} <code>{result.playerPath ?? "—"}</code>
-            </div>
-            <div>
-              Défaut : {result.defaultFound ? "✅" : "❌"} <code>{result.defaultPath ?? "—"}</code>
-            </div>
-            <div style={{ marginTop: 4 }}>
-              {(() => {
-                const j = result.binds.filter((b) => b.source === "joueur").length;
-                const d = result.binds.filter((b) => b.source === "défaut").length;
-                const a = result.binds.filter((b) => b.source === "à assigner").length;
-                return (
-                  <span>
-                    Total {result.binds.length} — <span style={{ color: sourceColor.joueur }}>{j} joueur</span>,{" "}
-                    <span style={{ color: sourceColor.défaut }}>{d} défaut</span>,{" "}
-                    <span style={{ color: sourceColor["à assigner"] }}>{a} à assigner</span>
-                  </span>
-                );
-              })()}
-            </div>
+      <div
+        className="flex max-h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 shadow-2xl"
+        style={{ background: "rgba(20,20,28,0.96)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* En-tête */}
+        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-white">Mapping dynamique</h2>
+            <p className="mt-0.5 text-xs text-white/50">
+              Touches réelles lues dans votre profil Star Citizen et transmises à l'émulation
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={onRefresh}
+            title="Relire les fichiers SC et retransmettre à l'émulation"
+            className="ml-auto shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/10"
+          >
+            ↻ Recharger
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fermer"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
 
-          {result.warnings.length > 0 && (
-            <ul style={{ color: "#FFC56B", margin: "6px 0" }}>
-              {result.warnings.map((w, i) => (
-                <li key={i}>⚠ {w}</li>
-              ))}
-            </ul>
+        {/* Corps */}
+        <div className="min-h-0 flex-1 overflow-auto p-5">
+          {result == null || counts == null ? (
+            <div className="text-sm text-white/60">Lecture du profil en cours…</div>
+          ) : (
+            <>
+              {/* Résumé */}
+              <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white/70">
+                  Joueur {result.playerFound ? "✅" : "❌"}{" "}
+                  <code className="text-white/40">{result.playerPath ?? "—"}</code>
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white/70">
+                  Défaut {result.defaultFound ? "✅" : "❌"}{" "}
+                  <code className="text-white/40">{result.defaultPath ?? "—"}</code>
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white/70">
+                  <span className="font-semibold text-white/90">{result.binds.length}</span> actions ·{" "}
+                  <span className="text-emerald-300">{counts.joueur} joueur</span> ·{" "}
+                  <span className="text-sky-300">{counts.défaut} défaut</span> ·{" "}
+                  <span className="text-amber-300">{counts.àAssigner} à assigner</span>
+                </span>
+              </div>
+
+              {result.warnings.length > 0 && (
+                <ul className="mb-4 list-inside list-disc rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-200">
+                  {result.warnings.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Table */}
+              <div className="overflow-x-auto rounded-xl border border-white/10">
+                <table className="w-full border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-white/5 text-left text-white/50">
+                      <th className="whitespace-nowrap px-3 py-2 font-semibold">Action</th>
+                      <th className="whitespace-nowrap px-3 py-2 font-semibold">action name</th>
+                      <th className="whitespace-nowrap px-3 py-2 font-semibold">Touche réelle</th>
+                      <th className="whitespace-nowrap px-3 py-2 font-semibold">Activation</th>
+                      <th className="whitespace-nowrap px-3 py-2 font-semibold">Source</th>
+                      <th className="whitespace-nowrap px-3 py-2 font-semibold">raw</th>
+                      <th className="whitespace-nowrap px-3 py-2 font-semibold">Autres périph.</th>
+                      <th className="whitespace-nowrap px-3 py-2 font-semibold">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.binds.map((b) => (
+                      <tr key={b.id} className="border-b border-white/5 last:border-0">
+                        <td className="px-3 py-1.5 text-white/85">{b.labelFr}</td>
+                        <td className="px-3 py-1.5 font-mono text-white/50">{b.id}</td>
+                        <td className="px-3 py-1.5 font-mono font-bold text-white">{formatKey(b)}</td>
+                        <td className="px-3 py-1.5 text-white/70">
+                          {b.activation === "long" ? "⏱ long" : b.activation}
+                        </td>
+                        <td className={`px-3 py-1.5 ${sourceClass[b.source]}`}>{b.source}</td>
+                        <td className="px-3 py-1.5 font-mono text-white/45">{b.rawInput ?? "—"}</td>
+                        <td className="px-3 py-1.5 text-white/45">
+                          {b.otherDevices.length ? b.otherDevices.join(", ") : "—"}
+                        </td>
+                        <td className="px-3 py-1.5 text-amber-300">
+                          {b.notes.length ? b.notes.join(" · ") : ""}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
-
-          <table style={{ borderCollapse: "collapse", width: "100%" }}>
-            <thead>
-              <tr style={{ textAlign: "left", borderBottom: "1px solid #333" }}>
-                <th style={{ padding: "4px 8px" }}>Action</th>
-                <th style={{ padding: "4px 8px" }}>action name</th>
-                <th style={{ padding: "4px 8px" }}>Touche réelle</th>
-                <th style={{ padding: "4px 8px" }}>Activation</th>
-                <th style={{ padding: "4px 8px" }}>Source</th>
-                <th style={{ padding: "4px 8px" }}>raw</th>
-                <th style={{ padding: "4px 8px" }}>Autres périph.</th>
-                <th style={{ padding: "4px 8px" }}>Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.binds.map((b) => (
-                <tr key={b.id} style={{ borderBottom: "1px solid #1c2026" }}>
-                  <td style={{ padding: "3px 8px" }}>{b.labelFr}</td>
-                  <td style={{ padding: "3px 8px", opacity: 0.7 }}>{b.id}</td>
-                  <td style={{ padding: "3px 8px", fontWeight: 700 }}>{formatKey(b)}</td>
-                  <td style={{ padding: "3px 8px" }}>
-                    {b.activation === "long" ? "⏱ long" : b.activation}
-                  </td>
-                  <td style={{ padding: "3px 8px", color: sourceColor[b.source] }}>{b.source}</td>
-                  <td style={{ padding: "3px 8px", opacity: 0.6 }}>{b.rawInput ?? "—"}</td>
-                  <td style={{ padding: "3px 8px", opacity: 0.6 }}>
-                    {b.otherDevices.length ? b.otherDevices.join(", ") : "—"}
-                  </td>
-                  <td style={{ padding: "3px 8px", color: "#FFC56B" }}>
-                    {b.notes.length ? b.notes.join(" · ") : ""}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }

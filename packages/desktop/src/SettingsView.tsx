@@ -3,23 +3,58 @@ import { MANUFACTURER_THEMES } from "@sc-mfd/shared";
 import type { Language } from "./desktopSettings";
 import type { LogEntry, ScInstall, ServerInfo } from "./desktopTypes";
 import type { DeployResult } from "./controlProfile";
+import type { ProfileReadResult } from "./profileReader";
 
-// Sélecteur de thème constructeur (zone A desktop).
-function ThemeSelector({ value, onSelect }: { value: string; onSelect: (id: string) => void }) {
+// Paramètres — UI/UX reprise de SC Fleet Manager V2 (SettingsPage.tsx) : page
+// scrollable, en-tête titré, sections en encarts glass (rounded-2xl, border-white/10,
+// bg-white/[0.025], backdrop-blur), grille 2 colonnes responsive, switches/segments
+// à l'accent thémable. Contenu fonctionnel inchangé (serveur, connexion, thèmes,
+// Star Citizen, général, activité).
+
+function Section({
+  title,
+  subtitle,
+  className,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="themes">
-      {MANUFACTURER_THEMES.map((t) => (
-        <button
-          key={t.id}
-          type="button"
-          className={`th${value === t.id ? " on" : ""}`}
-          onClick={() => onSelect(t.id)}
-        >
-          <span className="c" style={{ background: t.accent }} />
-          <span className="n">{t.name}</span>
-          <span className="sub">{t.subtitle}</span>
-        </button>
-      ))}
+    <section
+      className={[
+        "rounded-2xl border border-white/10 bg-white/[0.025] p-5 backdrop-blur-sm",
+        className ?? "",
+      ].join(" ")}
+    >
+      <div className="mb-4 border-b border-white/10 pb-3">
+        <h2 className="text-base font-semibold text-white">{title}</h2>
+        {subtitle && <p className="mt-0.5 text-sm text-white/50">{subtitle}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+// Ligne de réglage : libellé + description à gauche, contrôle à droite.
+function Row({
+  label,
+  desc,
+  children,
+}: {
+  label: string;
+  desc?: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-white/5 py-3 last:border-0">
+      <div className="min-w-0">
+        <div className="text-sm font-medium text-white">{label}</div>
+        {desc && <div className="mt-0.5 text-xs leading-relaxed text-white/45">{desc}</div>}
+      </div>
+      {children && <div className="shrink-0">{children}</div>}
     </div>
   );
 }
@@ -30,9 +65,63 @@ function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       type="button"
       role="switch"
       aria-checked={on}
-      className={`sw${on ? " on" : ""}`}
       onClick={() => onChange(!on)}
-    />
+      className={[
+        "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+        on ? "bg-[var(--accent)]" : "bg-white/15",
+      ].join(" ")}
+    >
+      <span
+        className={[
+          "absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all",
+          on ? "left-[22px]" : "left-0.5",
+        ].join(" ")}
+      />
+    </button>
+  );
+}
+
+// Bannière de statut (ok = emerald, ko = red), style V2.
+function StatusNote({ ok, children }: { ok: boolean; children: React.ReactNode }) {
+  return (
+    <div
+      className={[
+        "mt-3 flex items-center gap-2 rounded-xl border px-4 py-2 text-sm",
+        ok
+          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+          : "border-red-500/30 bg-red-500/10 text-red-300",
+      ].join(" ")}
+    >
+      <span className="text-[10px]">●</span>
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function ThemeSelector({ value, onSelect }: { value: string; onSelect: (id: string) => void }) {
+  return (
+    <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+      {MANUFACTURER_THEMES.map((t) => {
+        const active = value === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onSelect(t.id)}
+            className={[
+              "flex flex-col items-center gap-2 rounded-xl border p-3 transition-colors",
+              active
+                ? "border-[var(--accent)] bg-[var(--accent-muted)]"
+                : "border-white/10 bg-white/5 hover:bg-white/10",
+            ].join(" ")}
+          >
+            <span className="h-6 w-6 rounded-full" style={{ background: t.accent }} />
+            <span className="text-xs font-semibold tracking-wide text-white">{t.name}</span>
+            <span className="text-[10px] uppercase tracking-wider text-white/40">{t.subtitle}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -58,6 +147,8 @@ type Props = {
   profileDeploy: DeployResult | null;
   showProfileNotice: boolean;
   onDismissProfileNotice: () => void;
+  profileMap: ProfileReadResult | null;
+  onOpenMapping: () => void;
 };
 
 export function SettingsView({
@@ -82,234 +173,242 @@ export function SettingsView({
   profileDeploy,
   showProfileNotice,
   onDismissProfileNotice,
+  profileMap,
+  onOpenMapping,
 }: Props) {
+  const mapCount = profileMap?.binds.length ?? 0;
+  const mapPlayer = profileMap?.binds.filter((b) => b.source === "joueur").length ?? 0;
+  const mapDefault = profileMap?.binds.filter((b) => b.source === "défaut").length ?? 0;
   const portMismatch = server != null && server.port !== port;
   const deployTime = profileDeploy
     ? new Date(profileDeploy.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
     : "";
 
-  return (
-    <>
-      <div className="p-head">
-        <h2>Paramètres</h2>
-        <div className="sub">Configuration du pont</div>
-      </div>
+  const segBtn = (active: boolean) =>
+    [
+      "rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
+      active
+        ? "border-[var(--accent)] bg-[var(--accent-muted)] text-white"
+        : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10",
+    ].join(" ");
 
-      <div className="p-body">
+  const ghostBtn =
+    "rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/10";
+
+  return (
+    <div className="p-8">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-white">Paramètres</h1>
+        <p className="mt-1 text-sm text-white/50">Configuration du pont tablette ↔ jeu</p>
+      </header>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* ── Serveur ── */}
-        <div className="card">
-          <div className="t">Serveur</div>
-          <div className="row">
-            <div className="info">
-              <b>Port d'écoute</b>
-              <small>
-                {portMismatch
-                  ? "Appliqué au redémarrage (rebind à venir)"
-                  : "Réseau local"}
-              </small>
-            </div>
-            <div className="field">
-              <input
-                type="number"
-                min={1}
-                max={65535}
-                value={port}
-                onChange={(e) => onPort(Number(e.target.value))}
-              />
-            </div>
-          </div>
-          <div className="row">
-            <div className="info">
-              <b>Adresse locale</b>
-              <small>Vue par la tablette</small>
-            </div>
-            <div className="val">
+        <Section title="Serveur" subtitle="Réseau local et démarrage">
+          <Row
+            label="Port d'écoute"
+            desc={portMismatch ? "Appliqué au redémarrage (rebind à venir)" : "Réseau local"}
+          >
+            <input
+              type="number"
+              min={1}
+              max={65535}
+              value={port}
+              onChange={(e) => onPort(Number(e.target.value))}
+              className="w-24 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-right text-sm text-white focus:border-[var(--accent)] focus:outline-none"
+            />
+          </Row>
+          <Row label="Adresse locale" desc="Vue par la tablette">
+            <span className="font-mono text-sm text-[var(--accent)]">
               {serverError ? "—" : server ? `${server.ip}:${server.port}` : "…"}
-            </div>
-          </div>
-          <div className="row">
-            <div className="info">
-              <b>Démarrer avec Windows</b>
-              <small>Lance l'app à l'ouverture de session</small>
-            </div>
+            </span>
+          </Row>
+          <Row label="Démarrer avec Windows" desc="Lance l'app à l'ouverture de session">
             <Switch on={startWithWindows} onChange={onStartWithWindows} />
-          </div>
-          <div className="row">
-            <div className="info">
-              <b>Réduire dans la barre des tâches</b>
-              <small>Fermer (✕) place l'app dans le system tray au lieu de quitter</small>
-            </div>
+          </Row>
+          <Row
+            label="Réduire dans la barre des tâches"
+            desc="Fermer (✕) place l'app dans le system tray au lieu de quitter"
+          >
             <Switch on={minimizeToTray} onChange={onMinimizeToTray} />
-          </div>
-        </div>
+          </Row>
+        </Section>
 
         {/* ── Connexion tablette ── */}
-        <div className="card">
-          <div className="t">Connexion tablette</div>
+        <Section title="Connexion tablette" subtitle="QR / adresse de jumelage">
           {server ? (
-            <div className="qr-mini">
-              <div className="qr">
-                <QRCodeSVG value={server.ws_url} size={88} level="M" bgColor="#ffffff" fgColor="#0a0c0f" />
+            <div className="flex items-center gap-4">
+              <div className="rounded-xl bg-white p-2.5 leading-none">
+                <QRCodeSVG value={server.ws_url} size={92} level="M" bgColor="#ffffff" fgColor="#0a0a0f" />
               </div>
-              <div className="qr-txt">
-                <b>{server.ws_url}</b>
-                <small>
-                  La tablette se connecte via cette adresse. QR / adresse en secours.
-                </small>
+              <div className="min-w-0">
+                <div className="break-all font-mono text-sm text-white">{server.ws_url}</div>
+                <div className="mt-1 text-xs text-white/45">
+                  La tablette se connecte via cette adresse. QR ou saisie en secours.
+                </div>
               </div>
             </div>
           ) : (
-            <div className="qr-txt">
-              <small>{serverError ? `Erreur : ${serverError}` : "Détection de l'adresse LAN…"}</small>
-            </div>
+            <p className="text-sm text-white/45">
+              {serverError ? `Erreur : ${serverError}` : "Détection de l'adresse LAN…"}
+            </p>
           )}
-        </div>
-
-        {/* ── Thèmes constructeurs (zone A) ── */}
-        <div className="card full">
-          <div className="t">Thèmes constructeurs</div>
-          <ThemeSelector value={themeId} onSelect={onSelectTheme} />
-        </div>
+        </Section>
 
         {/* ── Star Citizen ── */}
-        <div className="card">
-          <div className="t">Star Citizen</div>
-          <div className="row" style={{ border: "none", paddingTop: 0 }}>
-            <div className="info">
-              <b>Dossier du jeu</b>
-              <small>Détection auto (registre + emplacements connus)</small>
-            </div>
-          </div>
-          <div className="game-path">
-            <div className="pth" title={scInstall?.path ?? undefined}>
+        <Section title="Star Citizen" subtitle="Dossier d'installation du jeu">
+          <div className="flex items-center gap-2">
+            <div
+              className="min-w-0 flex-1 truncate rounded-xl border border-white/10 bg-white/5 px-3 py-2 font-mono text-sm text-white/80"
+              title={scInstall?.path ?? undefined}
+            >
               {!scResolved
                 ? "Détection…"
                 : scInstall?.detected && scInstall.path
                 ? scInstall.path
                 : "Non détecté"}
             </div>
-            <button type="button" onClick={onPickScFolder}>
+            <button type="button" onClick={onPickScFolder} className={ghostBtn}>
               Changer
             </button>
             {scInstall?.source === "manual" && (
-              <button type="button" onClick={onResetScFolder} title="Revenir à la détection automatique">
+              <button type="button" onClick={onResetScFolder} className={ghostBtn} title="Revenir à la détection automatique">
                 Auto
               </button>
             )}
           </div>
-          {scError && (
-            <div className="detect-ko">
-              <span>●</span> {scError}
-            </div>
-          )}
+          {scError && <StatusNote ok={false}>{scError}</StatusNote>}
           {scResolved &&
             !scError &&
             (scInstall?.detected ? (
-              <div className="detect-ok">
-                <span>●</span>{" "}
+              <StatusNote ok>
                 {scInstall.source === "manual" ? "Dossier choisi manuellement" : "Détecté automatiquement"}
                 {scInstall.channel ? ` · ${scInstall.channel}` : ""}
-              </div>
+              </StatusNote>
             ) : (
-              <div className="detect-ko">
-                <span>●</span> Aucune installation détectée
-              </div>
+              <StatusNote ok={false}>Aucune installation détectée</StatusNote>
             ))}
-        </div>
+        </Section>
 
         {/* ── Général ── */}
-        <div className="card">
-          <div className="t">Général</div>
-          <div className="row">
-            <div className="info">
-              <b>Langue</b>
-              <small>TODO i18n (traductions à venir)</small>
-            </div>
-            <div className="seg">
-              <button
-                type="button"
-                className={language === "fr" ? "on" : ""}
-                onClick={() => onLanguage("fr")}
-              >
+        <Section title="Général" subtitle="Langue et profil de touches">
+          <Row label="Langue" desc="TODO i18n (traductions à venir)">
+            <div className="flex gap-2">
+              <button type="button" className={segBtn(language === "fr")} onClick={() => onLanguage("fr")}>
                 FR
               </button>
-              <button
-                type="button"
-                className={language === "en" ? "on" : ""}
-                onClick={() => onLanguage("en")}
-              >
+              <button type="button" className={segBtn(language === "en")} onClick={() => onLanguage("en")}>
                 EN
               </button>
             </div>
-          </div>
-          <div className="row">
-            <div className="info">
-              <b>Profil de touches</b>
-              <small>Profil « SC MFD » déposé dans le jeu (régénéré à chaque lancement)</small>
-            </div>
+          </Row>
+          <Row
+            label="Profil de touches"
+            desc="Profil « SC MFD » déposé dans le jeu (régénéré à chaque lancement)"
+          >
             {profileDeploy == null ? (
-              <div className="val">Génération…</div>
+              <span className="text-sm text-white/50">Génération…</span>
             ) : profileDeploy.ok ? (
-              <div className="detect-ok" style={{ margin: 0 }} title={profileDeploy.path ?? undefined}>
-                <span>●</span> Installé (SC MFD){deployTime ? ` · ${deployTime}` : ""}
-              </div>
+              <span className="text-sm text-emerald-300" title={profileDeploy.path ?? undefined}>
+                ● Installé{deployTime ? ` · ${deployTime}` : ""}
+              </span>
             ) : (
-              <div className="detect-ko" style={{ margin: 0 }} title={profileDeploy.error ?? undefined}>
-                <span>●</span> Erreur de dépôt
-              </div>
+              <span className="text-sm text-red-300" title={profileDeploy.error ?? undefined}>
+                ● Erreur de dépôt
+              </span>
             )}
-          </div>
+          </Row>
 
           {showProfileNotice && (
-            <div
-              className="card"
-              style={{
-                margin: "10px 0 0",
-                background: "rgba(155,199,255,0.08)",
-                border: "1px solid rgba(155,199,255,0.25)",
-              }}
-            >
-              <div className="row" style={{ border: "none", paddingTop: 0, alignItems: "flex-start" }}>
-                <div className="info">
-                  <b>⚠ Étape à faire une fois dans Star Citizen</b>
-                  <small style={{ lineHeight: 1.5 }}>
-                    Pour activer les actions MFD : <b>Options → Keybindings → Advanced Controls
-                    Customization → Control Profiles → choisir « SC MFD »</b>.
+            <div className="mt-4 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-muted)] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-white">
+                    ⚠ Étape à faire une fois dans Star Citizen
+                  </div>
+                  <div className="mt-1 text-xs leading-relaxed text-white/70">
+                    Pour activer les actions MFD :{" "}
+                    <b>Options → Keybindings → Advanced Controls Customization → Control Profiles → « SC MFD »</b>.
                     <br />
                     Le profil doit être présent <b>avant</b> de lancer SC pour apparaître dans la liste —
                     s'il manque, relancez SC une fois (l'app le redépose à chaque démarrage).
-                  </small>
+                  </div>
                 </div>
-                <button type="button" onClick={onDismissProfileNotice} title="Masquer">
+                <button
+                  type="button"
+                  onClick={onDismissProfileNotice}
+                  className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10"
+                >
                   Compris
                 </button>
               </div>
             </div>
           )}
-        </div>
+        </Section>
 
-        {/* ── Activité (journal réduit) ── */}
-        <div className="card full">
-          <div className="t">Activité</div>
-          <div className="activity">
-            {logs.length > 0 ? (
-              logs.slice(0, 6).map((l) => (
-                <div className="act-line" key={l.key}>
-                  <span className="t-time">{l.time}</span>
-                  <span className="t-label">{l.label}</span>
-                  <span className={`t-detail ${l.kind}`}>{l.detail}</span>
-                </div>
-              ))
-            ) : (
-              <div className="act-empty">En attente d'une commande de la tablette…</div>
-            )}
+        {/* ── Mapping dynamique ── */}
+        <Section
+          title="Mapping dynamique"
+          subtitle="Touches réelles lues dans votre profil Star Citizen et transmises à l'émulation"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-sm text-white/60">
+              {profileMap == null ? (
+                "Lecture du profil en cours…"
+              ) : (
+                <>
+                  <span className="font-medium text-white/85">{mapCount}</span> actions ·{" "}
+                  <span className="text-emerald-300">{mapPlayer} joueur</span> ·{" "}
+                  <span className="text-sky-300">{mapDefault} défaut</span>
+                </>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={onOpenMapping}
+              className="shrink-0 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/85 transition-colors hover:bg-white/10"
+            >
+              Afficher le mapping
+            </button>
           </div>
-        </div>
+        </Section>
 
-        <div className="about">
-          SC <b>MFD Bridge</b> · Desktop
-        </div>
+        {/* ── Thèmes constructeurs ── */}
+        <Section className="lg:col-span-2" title="Thèmes" subtitle="Couleur d'accent de l'application">
+          <ThemeSelector value={themeId} onSelect={onSelectTheme} />
+        </Section>
+
+        {/* ── Activité ── */}
+        <Section className="lg:col-span-2" title="Activité" subtitle="Dernières commandes reçues de la tablette">
+          {logs.length > 0 ? (
+            <div className="flex flex-col">
+              {logs.slice(0, 8).map((l) => (
+                <div
+                  key={l.key}
+                  className="flex items-center gap-3 border-b border-white/5 py-2 text-sm last:border-0"
+                >
+                  <span className="font-mono text-xs text-white/35">{l.time}</span>
+                  <span className="flex-1 truncate text-white/85">{l.label}</span>
+                  <span
+                    className={[
+                      "truncate text-xs",
+                      l.kind === "ok"
+                        ? "text-emerald-300"
+                        : l.kind === "error"
+                        ? "text-red-300"
+                        : "text-white/40",
+                    ].join(" ")}
+                  >
+                    {l.detail}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-white/45">En attente d'une commande de la tablette…</p>
+          )}
+        </Section>
       </div>
-    </>
+    </div>
   );
 }

@@ -11,6 +11,9 @@ import { loadDesktopThemeId, saveDesktopThemeId } from "./themeStorage";
 import { WindowControls } from "./WindowControls";
 import { LoadingScreen } from "./LoadingScreen";
 import { SettingsView } from "./SettingsView";
+import { Dashboard } from "./Dashboard";
+import { BottomNav } from "./BottomNav";
+import type { DesktopView } from "./BottomNav";
 import { ProfileDebugPanel } from "./ProfileDebugPanel";
 import { readProfiles } from "./profileReader";
 import type { ProfileReadResult } from "./profileReader";
@@ -60,6 +63,8 @@ const MIN_LOADING_MS = 900; // laisse l'animation respirer même si tout est pr�
 
 export default function App() {
   const [phase, setPhase] = useState<"loading" | "ready">("loading");
+  // Vue active une fois prêt : tableau de bord (logo) ou paramètres (nav V2).
+  const [view, setView] = useState<DesktopView>("dashboard");
 
   // Thème zone A (toute l'app desktop), posé sur .app (jamais :root).
   const [themeId, setThemeId] = useState<string>(loadDesktopThemeId);
@@ -360,38 +365,78 @@ export default function App() {
   ];
 
   return (
-    <div className="app" ref={zoneRef}>
-      <div className="titlebar" data-tauri-drag-region>
-        <div className="left" data-tauri-drag-region>
-          <img className="logo" src="/logo.png" alt="SC MFD" data-tauri-drag-region />
-          <div className="name" data-tauri-drag-region>
-            SC FLEET <b>MFD BRIDGE</b>
-            <small>Pont tablette ↔ jeu</small>
+    <div ref={zoneRef} className="relative flex h-full w-full flex-col overflow-hidden">
+      {/* Fond glassmorphique global teinté à l'accent (repris de SCFM V2 Layout). */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at 20% 50%, var(--bg-glow-1, rgba(45,127,249,0.15)) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, var(--bg-glow-2, rgba(45,127,249,0.1)) 0%, transparent 50%), #0a0a0f",
+        }}
+      />
+
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
+        <header
+          data-tauri-drag-region
+          className="flex h-14 shrink-0 items-center justify-between border-b border-white/10 px-4"
+        >
+          <div className="flex items-center gap-3" data-tauri-drag-region>
+            <img src="/logo.png" alt="SC MFD" className="h-7 w-7 object-contain" data-tauri-drag-region />
+            <div className="leading-tight" data-tauri-drag-region>
+              <div className="text-sm font-bold tracking-wide text-white">
+                SC FLEET <span className="text-[var(--accent)]">MFD BRIDGE</span>
+              </div>
+              <div className="text-[10px] uppercase tracking-wider text-white/40">
+                Pont tablette ↔ jeu
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="tb-right">
-          {phase === "ready" && (
-            <button
-              type="button"
-              className="gear on"
-              title="Mapping touches (debug C2)"
-              onClick={() => setShowProfileDebug(true)}
-            >
-              🔑
-            </button>
+          <div className="flex items-center gap-1">
+            <WindowControls />
+          </div>
+        </header>
+
+        {phase === "loading" ? (
+          <LoadingScreen steps={steps} />
+        ) : (
+          <main className="relative min-h-0 flex-1 overflow-auto pb-28">
+            {view === "dashboard" ? (
+              <Dashboard
+                server={server}
+                serverError={serverError}
+                devicesCount={devices.length}
+                scInstall={scInstall}
+              />
+            ) : (
+              <SettingsView
+              server={server}
+              serverError={serverError}
+              themeId={themeId}
+              onSelectTheme={selectTheme}
+              scInstall={scInstall}
+              scResolved={scResolved}
+              scError={scError}
+              logs={logs}
+              port={port}
+              onPort={changePort}
+              startWithWindows={startWithWindows}
+              onStartWithWindows={toggleStartWithWindows}
+              minimizeToTray={minimizeToTray}
+              onMinimizeToTray={toggleMinimizeToTray}
+              language={language}
+              onLanguage={changeLanguage}
+              onPickScFolder={pickScFolder}
+              onResetScFolder={resetScFolder}
+              profileDeploy={profileDeploy}
+              showProfileNotice={!noticeSeen}
+              onDismissProfileNotice={dismissNotice}
+              profileMap={profileMap}
+              onOpenMapping={() => setShowProfileDebug(true)}
+            />
           )}
-          {phase === "ready" && (
-            <button
-              type="button"
-              className="gear on"
-              title="Paramètres"
-              onClick={() => document.querySelector(".p-body")?.scrollTo({ top: 0, behavior: "smooth" })}
-            >
-              ⚙
-            </button>
-          )}
-          <WindowControls />
-        </div>
+          <BottomNav view={view} onNavigate={setView} />
+        </main>
+      )}
       </div>
 
       {showProfileDebug && (
@@ -399,34 +444,6 @@ export default function App() {
           result={profileMap}
           onClose={() => setShowProfileDebug(false)}
           onRefresh={loadProfile}
-        />
-      )}
-
-      {phase === "loading" ? (
-        <LoadingScreen steps={steps} />
-      ) : (
-        <SettingsView
-          server={server}
-          serverError={serverError}
-          themeId={themeId}
-          onSelectTheme={selectTheme}
-          scInstall={scInstall}
-          scResolved={scResolved}
-          scError={scError}
-          logs={logs}
-          port={port}
-          onPort={changePort}
-          startWithWindows={startWithWindows}
-          onStartWithWindows={toggleStartWithWindows}
-          minimizeToTray={minimizeToTray}
-          onMinimizeToTray={toggleMinimizeToTray}
-          language={language}
-          onLanguage={changeLanguage}
-          onPickScFolder={pickScFolder}
-          onResetScFolder={resetScFolder}
-          profileDeploy={profileDeploy}
-          showProfileNotice={!noticeSeen}
-          onDismissProfileNotice={dismissNotice}
         />
       )}
     </div>

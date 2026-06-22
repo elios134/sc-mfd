@@ -25,11 +25,13 @@ export function WindowControls() {
     return () => unlisten?.();
   }, [win]);
 
+  const btn =
+    "flex h-7 w-9 items-center justify-center rounded-md text-[13px] text-white/60 transition-colors hover:bg-white/10 hover:text-white";
   return (
-    <div className="win-ctrl">
+    <div className="flex items-center gap-1">
       <button
         type="button"
-        className="win-btn"
+        className={btn}
         title="Réduire"
         aria-label="Réduire"
         onClick={() => void win.minimize()}
@@ -38,7 +40,7 @@ export function WindowControls() {
       </button>
       <button
         type="button"
-        className="win-btn"
+        className={btn}
         title={maximized ? "Restaurer" : "Agrandir"}
         aria-label={maximized ? "Restaurer" : "Agrandir"}
         onClick={() => void win.toggleMaximize()}
@@ -47,7 +49,7 @@ export function WindowControls() {
       </button>
       <button
         type="button"
-        className="win-btn close"
+        className={`${btn} hover:bg-red-500 hover:text-white`}
         title="Fermer"
         aria-label="Fermer"
         onClick={() => void win.close()}
