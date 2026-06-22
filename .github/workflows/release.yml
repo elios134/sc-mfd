@@ -72,7 +72,11 @@ jobs:
         run: npx cap sync android
 
       - name: Décoder le keystore
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > packages/tablet/android/app/scmfd.keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        # Nettoie d'éventuels \r / sauts de ligne / espaces (base64 généré sous Windows)
+        # avant de décoder, sinon `base64 -d` échoue (« invalid input »).
+        run: printf %s "$KEYSTORE_B64" | tr -d '\r\n ' | base64 -d > packages/tablet/android/app/scmfd.keystore
 
       - name: Build de l'APK release (signé)
         working-directory: packages/tablet/android
