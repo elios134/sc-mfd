@@ -27,7 +27,11 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Docs / livrables de travail (audits datamining, rapports, maquettes locales)
-docs/
+# Le contenu de docs/ est ignoré par défaut, sauf les livrables versionnés ci-dessous.
+docs/*
+!docs/audit-commandes-star-citizen.csv
+!docs/audit-commandes-star-citizen.md
+!docs/mfd-pont-ecrans-commandes.md
 
 # Editor / OS
 .vscode/*
