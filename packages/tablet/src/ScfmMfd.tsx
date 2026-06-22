@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ConfigFilter, MfdId } from "@sc-mfd/shared";
 import {
   CONFIG_FILTERS,
-  DIAGNOSTIC_GROUPS,
   ENERGIE_GROUPS,
   MISSILES_GROUPS,
   PERSISTENT_BUTTONS,
@@ -28,7 +27,6 @@ const NAV: { id: MfdId; ico: string; t: string }[] = [
   { id: "bouclier", ico: "🛡", t: "Bouclier" },
   { id: "config", ico: "⚙", t: "Config" },
   { id: "missiles", ico: "🚀", t: "Missiles" },
-  { id: "diagnostic", ico: "🛠", t: "Diag" },
 ];
 
 const CONN_LABEL: Record<ConnState, string> = {
@@ -325,8 +323,6 @@ export function ScfmMfd({
             {activeFilter.groups.map((g, i) => renderGroup(g, `cfg-${activeFilter.id}-${i}`))}
           </>
         )}
-
-        {screen === "diagnostic" && DIAGNOSTIC_GROUPS.map((g, i) => renderGroup(g, `diag-${i}`))}
       </div>
 
       <div className={`toast${toast.show ? " show" : ""}`}>{toast.msg}</div>

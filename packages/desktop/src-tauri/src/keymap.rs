@@ -64,7 +64,6 @@ pub fn bind_for(action_id: &str) -> Option<Bind> {
         "v_flight_advanced_hud_toggle" => Some(Bind { key: "k", modifiers: &["rctrl"], assigned: true, activation: "press" }),
         "v_mfd_soft_select_cast_left_short" => Some(Bind { key: "o", modifiers: &["rctrl"], assigned: true, activation: "press" }),
         "v_mfd_soft_select_cast_right_short" => Some(Bind { key: "p", modifiers: &["rctrl"], assigned: true, activation: "press" }),
-        "v_mfd_quick_action_repair_all" => Some(Bind { key: "r", modifiers: &["rctrl"], assigned: true, activation: "press" }),
         "v_shield_raise_level_forward" => Some(Bind { key: "np_8", modifiers: &["rctrl"], assigned: true, activation: "press" }),
         "v_shield_raise_level_back" => Some(Bind { key: "np_2", modifiers: &["rctrl"], assigned: true, activation: "press" }),
         "v_shield_raise_level_left" => Some(Bind { key: "np_4", modifiers: &["rctrl"], assigned: true, activation: "press" }),

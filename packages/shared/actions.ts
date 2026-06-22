@@ -361,6 +361,10 @@ export const ACTIONS: MfdAction[] = [
     labelEn: "Gimbal lock",
     mfd: "config",
     filter: "armes",
+    // NE PAS « corriger » : la touche g est VOLONTAIREMENT partagée avec
+    // v_weapon_increase_max_missiles (« Armés + »). C'est le comportement
+    // CONTEXTUEL du jeu — selon le mode actif, g pilote l'une ou l'autre action.
+    // Les deux sont des touches « default » réelles de Star Citizen.
     bind: { key: "g", modifiers: [] },
     status: "default",
     activation: "press",
@@ -470,18 +474,6 @@ export const ACTIONS: MfdAction[] = [
     activation: "press",
   },
 
-  // ===== DIAGNOSTIC =====
-  {
-    id: "v_mfd_quick_action_repair_all",
-    labelFr: "Tout réparer",
-    labelEn: "Repair all",
-    mfd: "diagnostic",
-    filter: null,
-    bind: { key: "r", modifiers: ["rctrl"] },
-    status: "profile",
-    activation: "press",
-  },
-
   // ===== BOUCLIER (écran ajouté pour la 2e UI / variante B) =====
   // Touches rctrl+pavé numérique = orientation des faces (8 avant, 2 arrière,
   // 4 bâbord, 6 tribord, 5 centre = reset). Toutes « non assigné » dans SC.
@@ -559,6 +551,9 @@ export const ACTIONS: MfdAction[] = [
     activation: "press",
   },
   // Nombre de missiles armés : + = touche jeu réelle (g) ; − non assigné → profil.
+  // NE PAS « corriger » le partage de g : touche VOLONTAIREMENT commune avec
+  // v_weapon_gimbals_state_toggle (« Cadran verrouillé »). Comportement contextuel
+  // du jeu — selon le mode actif, g pilote l'une ou l'autre. Voir le commentaire jumeau.
   {
     id: "v_weapon_increase_max_missiles",
     labelFr: "Armés +",

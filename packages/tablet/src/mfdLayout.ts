@@ -38,7 +38,7 @@ export interface ActionElement {
   label?: string;
   /** Texte de la pastille d'appel à l'action (ex "Demander"). */
   cta?: string;
-  /** "big" = grosse action pleine largeur (écran diagnostic). */
+  /** "big" = grosse action pleine largeur. */
   variant?: "default" | "big";
 }
 
@@ -190,18 +190,6 @@ export const CONFIG_FILTERS: ConfigFilterTab[] = [
   },
 ];
 
-// ===================== ÉCRAN DIAGNOSTIC =====================
-export const DIAGNOSTIC_GROUPS: LayoutGroup[] = [
-  {
-    label: "Réparation",
-    columns: 1,
-    note: "⚠ Seule la réparation globale a un raccourci dans le jeu. La réparation par composant se fait dans la vue Diagnostics du MFD in-game, pas pilotable depuis l'app.",
-    elements: [
-      { kind: "action", actionId: "v_mfd_quick_action_repair_all", label: "⚙ Tout réparer", variant: "big" },
-    ],
-  },
-];
-
 // ===================== ÉCRAN BOUCLIERS =====================
 // 4 faces directionnelles + reset. Donnée pure (action par face) ; le rendu est
 // propre à chaque UI : boutons disposés (SCFM) ou schéma circulaire (variante B).
@@ -327,7 +315,6 @@ function referencedActionIds(): string[] {
   };
   collect(ENERGIE_GROUPS);
   CONFIG_FILTERS.forEach((f) => collect(f.groups));
-  collect(DIAGNOSTIC_GROUPS);
   collect(MISSILES_GROUPS);
   SHIELD_FACES.forEach((f) => ids.push(f.actionId));
   ids.push(SHIELD_RESET_ACTION);

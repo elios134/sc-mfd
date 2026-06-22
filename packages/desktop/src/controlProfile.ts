@@ -49,7 +49,6 @@ const ACTIONMAP_OF: Record<string, string> = {
   v_flight_advanced_hud_toggle: "spaceship_movement",
   v_mfd_soft_select_cast_left_short: "vehicle_mfd",
   v_mfd_soft_select_cast_right_short: "vehicle_mfd",
-  v_mfd_quick_action_repair_all: "vehicle_mfd",
   // + actions ajoutées pour la 2e UI (variante B).
   v_shield_raise_level_forward: "spaceship_defensive",
   v_shield_raise_level_back: "spaceship_defensive",
