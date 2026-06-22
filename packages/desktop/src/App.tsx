@@ -33,10 +33,7 @@ import {
   saveStartWithWindows,
   loadMinimizeToTray,
   saveMinimizeToTray,
-  loadLanguage,
-  saveLanguage,
 } from "./desktopSettings";
-import type { Language } from "./desktopSettings";
 
 // Payloads miroirs des events Rust (server.rs).
 interface CommandEventPayload {
@@ -155,7 +152,6 @@ export default function App() {
   const [port, setPort] = useState<number>(() => loadWsPort(8420));
   const [startWithWindows, setStartWithWindows] = useState<boolean>(loadStartWithWindows);
   const [minimizeToTray, setMinimizeToTray] = useState<boolean>(loadMinimizeToTray);
-  const [language, setLanguage] = useState<Language>(loadLanguage);
 
   // ── Effets de démarrage : serveur + détection SC + listeners WS ──
   useEffect(() => {
@@ -297,11 +293,6 @@ export default function App() {
       console.error("[tray] sync état échouée:", e)
     );
   };
-  const changeLanguage = (v: Language) => {
-    setLanguage(v);
-    saveLanguage(v);
-    // TODO i18n : brancher un système de traduction (les libellés sont en dur pour l'instant).
-  };
   const pickScFolder = async () => {
     setScError(null);
     let selected: string | string[] | null;
@@ -423,8 +414,6 @@ export default function App() {
               onStartWithWindows={toggleStartWithWindows}
               minimizeToTray={minimizeToTray}
               onMinimizeToTray={toggleMinimizeToTray}
-              language={language}
-              onLanguage={changeLanguage}
               onPickScFolder={pickScFolder}
               onResetScFolder={resetScFolder}
               profileDeploy={profileDeploy}

@@ -1,13 +1,10 @@
 // Persistance des réglages desktop via localStorage de la webview Tauri
 // (survit aux relances). Mécanisme identique au thème desktop (themeStorage.ts).
 
-export type Language = "fr" | "en";
-
 const KEYS = {
   port: "sc-mfd.desktop.wsPort",
   startWithWindows: "sc-mfd.desktop.startWithWindows",
   minimizeToTray: "sc-mfd.desktop.minimizeToTray",
-  language: "sc-mfd.desktop.language",
   profileNoticeSeen: "sc-mfd.desktop.profileNoticeSeen",
   scPathOverride: "sc-mfd.scPath.override",
 } as const;
@@ -60,13 +57,6 @@ export function loadMinimizeToTray(): boolean {
 }
 export function saveMinimizeToTray(v: boolean): void {
   writeBool(KEYS.minimizeToTray, v);
-}
-
-export function loadLanguage(): Language {
-  return readStr(KEYS.language, "fr") === "en" ? "en" : "fr";
-}
-export function saveLanguage(v: Language): void {
-  writeStr(KEYS.language, v);
 }
 
 // Chemin SC choisi manuellement (override). La SOURCE DE VÉRITÉ qui le rend

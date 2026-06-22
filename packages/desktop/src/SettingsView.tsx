@@ -1,6 +1,5 @@
 import { QRCodeSVG } from "qrcode.react";
 import { MANUFACTURER_THEMES } from "@sc-mfd/shared";
-import type { Language } from "./desktopSettings";
 import type { LogEntry, ScInstall, ServerInfo } from "./desktopTypes";
 import type { DeployResult } from "./controlProfile";
 import type { ProfileReadResult } from "./profileReader";
@@ -140,8 +139,6 @@ type Props = {
   onStartWithWindows: (v: boolean) => void;
   minimizeToTray: boolean;
   onMinimizeToTray: (v: boolean) => void;
-  language: Language;
-  onLanguage: (v: Language) => void;
   onPickScFolder: () => void;
   onResetScFolder: () => void;
   profileDeploy: DeployResult | null;
@@ -166,8 +163,6 @@ export function SettingsView({
   onStartWithWindows,
   minimizeToTray,
   onMinimizeToTray,
-  language,
-  onLanguage,
   onPickScFolder,
   onResetScFolder,
   profileDeploy,
@@ -183,14 +178,6 @@ export function SettingsView({
   const deployTime = profileDeploy
     ? new Date(profileDeploy.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
     : "";
-
-  const segBtn = (active: boolean) =>
-    [
-      "rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
-      active
-        ? "border-[var(--accent)] bg-[var(--accent-muted)] text-white"
-        : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10",
-    ].join(" ");
 
   const ghostBtn =
     "rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/10";
@@ -290,18 +277,8 @@ export function SettingsView({
             ))}
         </Section>
 
-        {/* ── Général ── */}
-        <Section title="Général" subtitle="Langue et profil de touches">
-          <Row label="Langue" desc="TODO i18n (traductions à venir)">
-            <div className="flex gap-2">
-              <button type="button" className={segBtn(language === "fr")} onClick={() => onLanguage("fr")}>
-                FR
-              </button>
-              <button type="button" className={segBtn(language === "en")} onClick={() => onLanguage("en")}>
-                EN
-              </button>
-            </div>
-          </Row>
+        {/* ── Profil de touches ── */}
+        <Section title="Profil de touches" subtitle="Profil « SC MFD » injecté dans le jeu">
           <Row
             label="Profil de touches"
             desc="Profil « SC MFD » déposé dans le jeu (régénéré à chaque lancement)"
