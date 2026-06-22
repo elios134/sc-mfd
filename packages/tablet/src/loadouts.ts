@@ -7,17 +7,20 @@ export const LOADOUTS: Loadout[] = [
   {
     id: "scfm",
     name: "SCFM",
-    description: "Interface ambre/gold · le style maison SC Fleet Manager",
+    description: "Style maison · cartes et grille",
     available: true,
     defaultThemeId: "aegis",
+    preview: "scfm",
     Mfd: ScfmMfd,
   },
   {
+    // id conservé (clés de thème/sélection persistées) — seul le nom affiché change.
     id: "variante-b",
-    name: "Variante B",
-    description: "Interface verre / doux · écrans translucides, glow",
+    name: "SC UI",
+    description: "Interface verre · panneaux translucides",
     available: true,
     defaultThemeId: "origin",
+    preview: "glass",
     Mfd: GlassMfd,
   },
 ];

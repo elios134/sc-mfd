@@ -31,6 +31,8 @@ export type Loadout = {
   available: boolean;
   /** Thème par défaut du loadout si rien n'est encore mémorisé. */
   defaultThemeId: string;
+  /** Style de préaffichage (miniature de l'UI) sur la carte de sélection. */
+  preview?: "scfm" | "glass";
   /** UI MFD associée ; undefined pour un placeholder non disponible. */
   Mfd?: ComponentType<LoadoutMfdProps>;
 };

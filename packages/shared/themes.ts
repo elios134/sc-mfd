@@ -26,6 +26,8 @@ export const MANUFACTURER_THEMES: ManufacturerTheme[] = [
   { id: "misc", name: "MISC", subtitle: "Tech", accent: "#4CD964" },
   { id: "esperia", name: "ESPERIA", subtitle: "Alien", accent: "#8B7CC7" },
   { id: "rsi", name: "RSI", subtitle: "Corpo", accent: "#C8D2DC" },
+  // Accent dominant de SC Fleet Manager V2 (indigo) — proposé comme thème, pas en défaut.
+  { id: "indigo", name: "SCFM", subtitle: "V2 indigo", accent: "#6366F1" },
 ];
 
 /** Thème par défaut (si aucun réglage persisté). */
