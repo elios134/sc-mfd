@@ -1,6 +1,6 @@
 [package]
 name = "sc-mfd-desktop"
-version = "1.0.0"
+version = "1.0.1"
 description = "MFD Bridge — desktop"
 authors = ["andre"]
 edition = "2021"
