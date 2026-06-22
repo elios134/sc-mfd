@@ -16,10 +16,25 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            // Lu depuis l'environnement (CI). Voir RELEASES.md.
+            if (System.getenv("SCMFD_KEYSTORE_FILE")) {
+                storeFile file(System.getenv("SCMFD_KEYSTORE_FILE"))
+                storePassword System.getenv("SCMFD_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("SCMFD_KEY_ALIAS")
+                keyPassword System.getenv("SCMFD_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // Signé uniquement si un keystore est fourni (CI) ; sinon APK non signé.
+            if (System.getenv("SCMFD_KEYSTORE_FILE")) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

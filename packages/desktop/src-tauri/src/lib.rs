@@ -61,7 +61,12 @@ pub fn run() {
     // commande Rust custom n'est nécessaire.
     #[cfg(desktop)]
     {
-        builder = builder.plugin(tauri_plugin_autostart::Builder::new().build());
+        builder = builder
+            .plugin(tauri_plugin_autostart::Builder::new().build())
+            // Mises à jour automatiques (vérifie la Release GitHub au lancement).
+            .plugin(tauri_plugin_updater::Builder::new().build())
+            // Redémarrage après installation d'une mise à jour.
+            .plugin(tauri_plugin_process::init());
     }
 
     builder

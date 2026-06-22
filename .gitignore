@@ -33,9 +33,16 @@ docs/*
 !docs/audit-commandes-star-citizen.md
 !docs/mfd-pont-ecrans-commandes.md
 
+# Secrets de signature (mises à jour) — NE JAMAIS committer (cf. RELEASES.md)
+*.keystore
+*.jks
+scmfd-updater.key
+scmfd-updater.key.pub
+
 # Editor / OS
 .vscode/*
 !.vscode/extensions.json
 .idea/
 .DS_Store
 Thumbs.db
+*.keystore.b64

@@ -15,6 +15,7 @@ import { Dashboard } from "./Dashboard";
 import { BottomNav } from "./BottomNav";
 import type { DesktopView } from "./BottomNav";
 import { ProfileDebugPanel } from "./ProfileDebugPanel";
+import { checkForUpdate } from "./updater";
 import { readProfiles } from "./profileReader";
 import type { ProfileReadResult } from "./profileReader";
 import { deployControlProfile } from "./controlProfile";
@@ -152,6 +153,11 @@ export default function App() {
   const [port, setPort] = useState<number>(() => loadWsPort(8420));
   const [startWithWindows, setStartWithWindows] = useState<boolean>(loadStartWithWindows);
   const [minimizeToTray, setMinimizeToTray] = useState<boolean>(loadMinimizeToTray);
+
+  // Mise à jour auto du pont au lancement (best-effort, silencieux).
+  useEffect(() => {
+    void checkForUpdate();
+  }, []);
 
   // ── Effets de démarrage : serveur + détection SC + listeners WS ──
   useEffect(() => {

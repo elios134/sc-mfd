@@ -1,0 +1,90 @@
+name: Release
+
+# Déclenché quand on pousse un tag de version (ex. v1.2.0).
+# Construit le pont (desktop, Tauri) et l'APK (tablette), et publie le tout dans
+# une Release GitHub. Voir RELEASES.md pour les secrets et le processus.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # créer la Release et y attacher les artefacts
+
+jobs:
+  # ── Pont desktop : installeur Windows + artefacts de mise à jour (Tauri) ──
+  desktop:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Build + Release (tauri-action)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Clé de SIGNATURE des mises à jour (générée via tauri signer generate).
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: packages/desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: "SC MFD ${{ github.ref_name }}"
+          releaseDraft: false
+          prerelease: false
+
+  # ── APK tablette : build release signé, ajouté à la même Release ──
+  android:
+    runs-on: ubuntu-latest
+    needs: desktop # la Release est créée par le job desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Build web tablette
+        run: npm run build -w @sc-mfd/tablet
+
+      - name: Synchroniser le projet Android
+        working-directory: packages/tablet
+        run: npx cap sync android
+
+      - name: Décoder le keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > packages/tablet/android/app/scmfd.keystore
+
+      - name: Build de l'APK release (signé)
+        working-directory: packages/tablet/android
+        env:
+          SCMFD_KEYSTORE_FILE: scmfd.keystore
+          SCMFD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          SCMFD_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          SCMFD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
+
+      - name: Publier l'APK dans la Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: packages/tablet/android/app/build/outputs/apk/release/app-release.apk
