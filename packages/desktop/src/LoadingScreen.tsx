@@ -10,7 +10,7 @@ export function LoadingScreen({ steps }: { steps: LoadStep[] }) {
       <div className="logo-ring">
         <div className="orbit o1" />
         <div className="orbit o2" />
-        <div className="logo-core">▦</div>
+        <img className="logo-core" src="/logo.png" alt="SC MFD" />
       </div>
       <div className="ld-title">
         SC <b>MFD BRIDGE</b>

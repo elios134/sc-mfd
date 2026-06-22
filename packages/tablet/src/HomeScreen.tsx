@@ -43,7 +43,7 @@ export function HomeScreen({
       </div>
 
       <div className="logo-top">
-        <div className="logo-mark">▦</div>
+        <img className="logo-mark" src="/logo.png" alt="SC MFD" />
         <div className="logo-name">
           SC <b>MFD</b>
         </div>

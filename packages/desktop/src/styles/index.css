@@ -1,15 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
-/* DA V2 — repris de docs/maquette-mfd-desktop.html */
+/* DA — bleu électrique par défaut (l'ambre d'origine a été retiré). */
 :root {
   --bg: #0a0c0f;
   --panel: #13161c;
   --panel-2: #181c24;
-  --gold: #f0a830;
-  --gold-soft: #c98a28;
-  --gold-glow: rgba(240, 168, 48, 0.16);
-  --amber-line: rgba(240, 168, 48, 0.26);
+  --gold: #2D7FF9;
+  --gold-soft: #1E5FC8;
+  --gold-glow: rgba(45, 127, 249, 0.16);
+  --amber-line: rgba(45, 127, 249, 0.26);
   --text: #e8e3d6;
   --muted: #8b8678;
   --green: #2ee9a5;
@@ -29,7 +29,7 @@ body,
 body {
   font-family: "Rajdhani", "Segoe UI", system-ui, sans-serif;
   background:
-    radial-gradient(120% 80% at 80% -10%, rgba(240, 168, 48, 0.05), transparent 55%),
+    radial-gradient(120% 80% at 80% -10%, rgba(45, 127, 249, 0.05), transparent 55%),
     var(--bg);
   color: var(--text);
   overflow: hidden;
@@ -56,7 +56,7 @@ body {
   justify-content: space-between;
   padding: 14px 22px;
   border-bottom: 1px solid var(--amber-line);
-  background: linear-gradient(180deg, rgba(240, 168, 48, 0.05), transparent);
+  background: linear-gradient(180deg, rgba(45, 127, 249, 0.05), transparent);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -68,14 +68,8 @@ body {
 .titlebar .logo {
   width: 30px;
   height: 30px;
-  border-radius: 8px;
-  border: 1px solid var(--amber-line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--gold);
-  font-size: 16px;
-  background: var(--gold-glow);
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px var(--gold-glow));
 }
 .titlebar .name {
   font-weight: 700;
@@ -611,14 +605,8 @@ tr:hover td {
 .logo-core {
   width: 46px;
   height: 46px;
-  border-radius: 11px;
-  background: var(--gold-glow);
-  border: 1px solid var(--amber-line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--gold);
-  font-size: 20px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 14px var(--gold-glow));
 }
 .ld-title {
   font-size: 20px;

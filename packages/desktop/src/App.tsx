@@ -363,7 +363,7 @@ export default function App() {
     <div className="app" ref={zoneRef}>
       <div className="titlebar" data-tauri-drag-region>
         <div className="left" data-tauri-drag-region>
-          <div className="logo">▦</div>
+          <img className="logo" src="/logo.png" alt="SC MFD" data-tauri-drag-region />
           <div className="name" data-tauri-drag-region>
             SC FLEET <b>MFD BRIDGE</b>
             <small>Pont tablette ↔ jeu</small>

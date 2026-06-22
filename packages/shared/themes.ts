@@ -18,12 +18,14 @@ export type ManufacturerTheme = {
 };
 
 export const MANUFACTURER_THEMES: ManufacturerTheme[] = [
-  { id: "aegis", name: "AEGIS", subtitle: "Militaire", accent: "#FFC56A" },
+  // AEGIS = thème par défaut de l'app : bleu électrique (l'ambre d'origine a été retiré).
+  { id: "aegis", name: "AEGIS", subtitle: "Militaire", accent: "#2D7FF9" },
   { id: "drake", name: "DRAKE", subtitle: "Pirate", accent: "#FF6B47" },
   { id: "origin", name: "ORIGIN", subtitle: "Luxe", accent: "#2EC4FF" },
   { id: "crusader", name: "CRUSADER", subtitle: "Civil", accent: "#4FA3FF" },
   { id: "misc", name: "MISC", subtitle: "Tech", accent: "#4CD964" },
   { id: "esperia", name: "ESPERIA", subtitle: "Alien", accent: "#8B7CC7" },
+  { id: "rsi", name: "RSI", subtitle: "Corpo", accent: "#C8D2DC" },
 ];
 
 /** Thème par défaut (si aucun réglage persisté). */
