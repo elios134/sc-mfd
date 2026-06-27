@@ -18,8 +18,10 @@ import { ProfileDebugPanel } from "./ProfileDebugPanel";
 import { checkForUpdate } from "./updater";
 import { readProfiles } from "./profileReader";
 import type { ProfileReadResult } from "./profileReader";
-import { deployControlProfile } from "./controlProfile";
+import { deployControlProfile, injectBindsFor } from "./controlProfile";
 import type { DeployResult } from "./controlProfile";
+import { saveKeyOverride, removeKeyOverride } from "./keyOverrides";
+import type { KeyOverride } from "./keyOverrides";
 import {
   loadProfileNoticeSeen,
   saveProfileNoticeSeen,
@@ -109,6 +111,7 @@ export default function App() {
         activation: b.activation,
         source: b.source,
         emulable: b.key != null, // null = à assigner / molette → non émulable
+        cleared: b.userCleared ?? false, // vidé par l'utilisateur → ne rien émuler
         raw: b.rawInput,
       }));
       try {
@@ -137,17 +140,35 @@ export default function App() {
       );
       if (res.warnings.length) console.warn("[profil] warnings:", res.warnings);
       console.groupEnd();
+
+      // Génère + dépose le control-profile « SC MFD » (reprend les binds joueur +
+      // injecte nos binds ET les touches personnalisées). Silencieux ; le statut
+      // alimente les paramètres.
+      const dep = await deployControlProfile(injectBindsFor(res.binds));
+      setProfileDeploy(dep);
+      if (dep.ok) console.log(`[profil] SC MFD déposé (${dep.added} binds ajoutés) → ${dep.path}`);
+      else console.warn("[profil] dépôt SC MFD échoué:", dep.error);
     } catch (e) {
       console.error("[profil] lecture échouée:", e);
     }
-
-    // Génère + dépose le control-profile « SC MFD » (reprend les binds joueur +
-    // ajoute nos 16). Silencieux ; le statut alimente les paramètres.
-    const dep = await deployControlProfile();
-    setProfileDeploy(dep);
-    if (dep.ok) console.log(`[profil] SC MFD déposé (${dep.added} binds ajoutés) → ${dep.path}`);
-    else console.warn("[profil] dépôt SC MFD échoué:", dep.error);
   }, []);
+
+  // Édition du mapping par l'utilisateur : on persiste l'override puis on relit le
+  // profil (recalcul du mapping + retransmission à l'émulation + re-dépôt SCMFD.xml).
+  const saveOverride = useCallback(
+    (actionId: string, override: KeyOverride) => {
+      saveKeyOverride(actionId, override);
+      void loadProfile();
+    },
+    [loadProfile]
+  );
+  const resetOverride = useCallback(
+    (actionId: string) => {
+      removeKeyOverride(actionId);
+      void loadProfile();
+    },
+    [loadProfile]
+  );
 
   // Réglages persistés.
   const [port, setPort] = useState<number>(() => loadWsPort(8420));
@@ -439,6 +460,8 @@ export default function App() {
           result={profileMap}
           onClose={() => setShowProfileDebug(false)}
           onRefresh={loadProfile}
+          onSaveOverride={saveOverride}
+          onResetOverride={resetOverride}
         />
       )}
     </div>

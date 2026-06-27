@@ -105,15 +105,20 @@ async fn resolve_and_emulate(action_id: &str) -> (bool, Option<String>, Option<S
     // 1) Mapping dynamique (source primaire).
     if crate::dynmap::is_loaded() {
         if let Some(b) = crate::dynmap::get(action_id) {
+            // Vidée explicitement par l'utilisateur : ne RIEN émuler, sans repli.
+            if b.cleared {
+                return (false, None, None, "perso (vidé)".to_string());
+            }
             if b.emulable {
                 if let Some(key) = b.key.as_deref() {
                     let mods: Vec<&str> = b.modifiers.iter().map(|s| s.as_str()).collect();
                     let (a, l, e) = emulate_for(key, &mods, &b.activation).await;
-                    let source = if b.source == "joueur" {
-                        "profil joueur".to_string()
-                    } else {
-                        "défaut (jeu)".to_string()
-                    };
+                    let source = match b.source.as_str() {
+                        "perso" => "perso (vous)",
+                        "joueur" => "profil joueur",
+                        _ => "défaut (jeu)",
+                    }
+                    .to_string();
                     return (a, l, e, source);
                 }
             }

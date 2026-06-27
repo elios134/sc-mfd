@@ -27,6 +27,11 @@ pub struct DynBind {
     pub source: String,
     /// false = à assigner / format non émulable au clavier (ex molette).
     pub emulable: bool,
+    /// true = l'utilisateur a EXPLICITEMENT vidé la touche → ne RIEN émuler, et
+    /// surtout NE PAS retomber sur le keymap figé (sinon le « vidage » serait sans
+    /// effet). Différent d'un « à assigner » naturel, qui garde le repli.
+    #[serde(default)]
+    pub cleared: bool,
     /// Input brut (ex "kb1_insert") — reçu pour traçabilité, pas encore lu côté Rust.
     #[allow(dead_code)]
     #[serde(default)]

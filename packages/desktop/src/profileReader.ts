@@ -13,8 +13,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ACTIONS } from "@sc-mfd/shared";
 import type { MfdAction } from "@sc-mfd/shared";
+import { loadKeyOverrides } from "./keyOverrides";
+import type { OverrideMap } from "./keyOverrides";
 
-export type BindSource = "joueur" | "défaut" | "à assigner";
+export type BindSource = "perso" | "joueur" | "défaut" | "à assigner";
 export type Activation = "press" | "long" | "hold";
 
 /** Mapping résolu d'une action vers sa touche réelle. */
@@ -34,7 +36,21 @@ export interface ResolvedBind {
   /** Rebinds NON-clavier du joueur (js*, mo*) — signalés, pas utilisés. */
   otherDevices: string[];
   notes: string[];
+  /** true = l'utilisateur a EXPLICITEMENT vidé la touche → ne RIEN émuler (pas de
+   *  repli keymap figé), à la différence d'un « à assigner » naturel. */
+  userCleared?: boolean;
 }
+
+/** Une action du profil SC (la nôtre ou native) qui occupe une touche donnée. */
+export interface KeyUser {
+  action: string;
+  context: string | null;
+  source: "joueur" | "défaut";
+}
+
+/** Index inversé combo-clavier → actions qui l'utilisent (base de l'avertissement
+ *  de conflit). Construit sur TOUT le profil SC, pas seulement nos actions MFD. */
+export type KeyIndex = Record<string, KeyUser[]>;
 
 export interface ProfileReadResult {
   binds: ResolvedBind[];
@@ -43,6 +59,8 @@ export interface ProfileReadResult {
   playerFound: boolean;
   defaultFound: boolean;
   warnings: string[];
+  /** Touches occupées dans le profil SC du joueur (pour détecter les conflits). */
+  keyIndex: KeyIndex;
 }
 
 /** Miroir du KeybindSources renvoyé par Rust. */
@@ -80,6 +98,15 @@ function parseCombo(raw: string): { key: string | null; modifiers: string[] } {
  *  `keyboard` du jeu mais NON émulable au clavier. À signaler pour C3. */
 function isMouseLike(key: string | null): boolean {
   return key != null && /^(mwheel_|mouse\d|maxis_)/.test(key);
+}
+
+/**
+ * Clé canonique d'une combinaison (touche + modificateurs), ORDRE INDIFFÉRENT.
+ * "" si pas de touche clavier. Sert à comparer deux binds (index ↔ conflit).
+ */
+export function comboKey(key: string | null, modifiers: string[]): string {
+  if (!key) return "";
+  return [...modifiers].sort().join("+") + "|" + key;
 }
 
 /** activationMode SC → notre Activation. null si l'attribut est absent. */
@@ -185,11 +212,12 @@ function parseDefault(xml: string): Map<string, DefaultEntry> {
   return map;
 }
 
-/** Résout une action de shared en croisant joueur (prio) puis défaut. */
+/** Résout une action de shared en croisant override perso (prio max), joueur, défaut. */
 function resolve(
   action: MfdAction,
   player: Map<string, PlayerEntry>,
-  def: Map<string, DefaultEntry>
+  def: Map<string, DefaultEntry>,
+  overrides: OverrideMap
 ): ResolvedBind {
   const notes: string[] = [];
   const pl = player.get(action.id);
@@ -206,6 +234,36 @@ function resolve(
   }
 
   const base = { id: action.id, labelFr: action.labelFr, activation, otherDevices, notes };
+  // Contexte (actionmap) connu pour l'injection du control-profile, même en override.
+  const ctx = pl?.context ?? df?.context ?? null;
+
+  // 0) Override défini par l'utilisateur dans l'app — gagne sur tout le reste.
+  const ov = overrides[action.id];
+  if (ov) {
+    if (ov.key == null) {
+      notes.push("touche retirée par vous (action vidée)");
+      return {
+        ...base,
+        activation: ov.activation,
+        key: null,
+        modifiers: [],
+        source: "à assigner",
+        rawInput: "perso (vidé)",
+        context: ctx,
+        userCleared: true,
+      };
+    }
+    notes.push("touche personnalisée (vous)");
+    return {
+      ...base,
+      activation: ov.activation,
+      key: ov.key,
+      modifiers: ov.modifiers,
+      source: "perso",
+      rawInput: "kb1_" + [...ov.modifiers, ov.key].join("+"),
+      context: ctx,
+    };
+  }
 
   // 1) Rebind clavier du joueur (prioritaire)
   if (pl && pl.kbRaw != null) {
@@ -271,6 +329,39 @@ function resolve(
   };
 }
 
+/**
+ * Construit l'index inversé combo → actions, sur TOUT le profil SC. Pour chaque
+ * action connue (joueur ∪ défaut), on retient sa touche EFFECTIVE (rebind joueur
+ * s'il existe, sinon défaut jeu) afin de ne pas compter deux fois la même action.
+ */
+function buildKeyIndex(
+  player: Map<string, PlayerEntry>,
+  def: Map<string, DefaultEntry>
+): KeyIndex {
+  const index: KeyIndex = {};
+  const add = (key: string | null, modifiers: string[], user: KeyUser) => {
+    if (isMouseLike(key)) return;
+    const ck = comboKey(key, modifiers);
+    if (!ck) return;
+    (index[ck] ??= []).push(user);
+  };
+
+  const names = new Set<string>([...player.keys(), ...def.keys()]);
+  for (const name of names) {
+    const pl = player.get(name);
+    const df = def.get(name);
+    const plKb = pl?.kbRaw?.trim();
+    if (plKb && plKb.length > 0) {
+      const { key, modifiers } = parseCombo(plKb);
+      add(key, modifiers, { action: name, context: pl?.context ?? null, source: "joueur" });
+    } else if (df?.keyboard && df.keyboard.trim().length > 0) {
+      const { key, modifiers } = parseCombo(df.keyboard.trim());
+      add(key, modifiers, { action: name, context: df.context ?? null, source: "défaut" });
+    }
+  }
+  return index;
+}
+
 /** Libellé lisible d'une touche résolue (ex "Alt + N", "Insert", "—"). */
 export function formatKey(b: ResolvedBind): string {
   if (b.key == null) return "—";
@@ -302,6 +393,7 @@ export async function readProfiles(): Promise<ProfileReadResult> {
         `Commande Rust « read_keybind_sources » indisponible : ${String(e)}`,
         "→ Si tauri dev tournait déjà, REDÉMARRE-le entièrement (le Rust doit être recompilé).",
       ],
+      keyIndex: {},
     };
   }
   const warnings = [...src.warnings];
@@ -323,7 +415,8 @@ export async function readProfiles(): Promise<ProfileReadResult> {
     }
   }
 
-  const binds = ACTIONS.map((a) => resolve(a, player, def));
+  const overrides = loadKeyOverrides();
+  const binds = ACTIONS.map((a) => resolve(a, player, def, overrides));
   return {
     binds,
     playerPath: src.player_path,
@@ -331,5 +424,6 @@ export async function readProfiles(): Promise<ProfileReadResult> {
     playerFound: Boolean(src.player_xml),
     defaultFound: Boolean(src.default_xml),
     warnings,
+    keyIndex: buildKeyIndex(player, def),
   };
 }

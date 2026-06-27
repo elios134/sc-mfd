@@ -58,6 +58,21 @@ Détails (vérifiés dans le code) :
 - Il doit être présent **avant** de lancer Star Citizen pour apparaître dans la liste.
   S'il manque, relancez le jeu une fois (le pont le redépose à chaque démarrage).
 
+### Personnaliser vos touches (optionnel)
+
+Le pont lit automatiquement les **vraies touches** de votre profil Star Citizen.
+Si vous voulez **changer la touche** d'une action MFD, ouvrez sur le pont
+**Paramètres → Mapping dynamique**, puis **« Modifier »** sur la ligne voulue :
+
+- pressez la nouvelle touche et cochez les modificateurs (Star Citizen distingue
+  Alt gauche/droite, etc.) ;
+- si la touche choisie est **déjà utilisée** (par un autre bouton MFD ou par votre
+  profil Star Citizen), un **avertissement** s'affiche avant validation ;
+- **Vider** désactive l'action ; **Réinitialiser** revient à la touche du jeu.
+
+Vos choix sont mémorisés sur le pont et réinjectés dans `SCMFD.xml` à chaque
+démarrage (votre profil de touches personnel n'est jamais modifié).
+
 ## 3. Installer l'app tablette (Android)
 
 Installez l'**APK** sur la tablette (voir [Construire l'APK](#construire-lapk-android)

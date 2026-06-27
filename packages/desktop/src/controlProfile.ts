@@ -13,6 +13,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { ACTIONS } from "@sc-mfd/shared";
+import type { ResolvedBind } from "./profileReader";
 
 const PROFILE_NAME = "SC MFD";
 
@@ -70,19 +71,40 @@ const ACTIONMAP_OF: Record<string, string> = {
   v_weapon_bombing_hud_range_reset: "spaceship_missiles",
 };
 
-interface ProfileBind {
+export interface ProfileBind {
   id: string;
   map: string;
   input: string;
 }
 
-/** Nos binds (id, actionmap, input "kb1_rctrl+…") construits depuis shared. */
-function ourBinds(): ProfileBind[] {
-  return ACTIONS.filter((a) => ACTIONMAP_OF[a.id] && a.bind).map((a) => ({
-    id: a.id,
-    map: ACTIONMAP_OF[a.id],
-    input: "kb1_" + [...a.bind!.modifiers, a.bind!.key].join("+"),
-  }));
+const ACTION_BY_ID = new Map(ACTIONS.map((a) => [a.id, a]));
+
+/**
+ * Liste des binds à injecter dans SCMFD.xml, UN SEUL par action. Pour chaque action :
+ *   - si l'utilisateur a posé un override perso (touche choisie) → on injecte SA
+ *     touche, dans l'actionmap connu (ACTIONMAP_OF, sinon contexte lu dans le profil) ;
+ *   - sinon, comportement historique : nos actions "profile" gardent leur bind figé
+ *     de shared (kb1_rctrl+…).
+ * Les autres actions (défaut/joueur non personnalisées) ne sont PAS injectées : le jeu
+ * les gère déjà avec leur propre touche.
+ */
+export function injectBindsFor(binds: ResolvedBind[]): ProfileBind[] {
+  const out: ProfileBind[] = [];
+  for (const rb of binds) {
+    if (rb.source === "perso" && rb.key) {
+      const map = ACTIONMAP_OF[rb.id] ?? rb.context ?? null;
+      if (map) {
+        out.push({ id: rb.id, map, input: "kb1_" + [...rb.modifiers, rb.key].join("+") });
+      }
+      continue; // override traité (même sans actionmap : émulé seul, pas injectable)
+    }
+    const map = ACTIONMAP_OF[rb.id];
+    const a = ACTION_BY_ID.get(rb.id);
+    if (map && a?.bind) {
+      out.push({ id: rb.id, map, input: "kb1_" + [...a.bind.modifiers, a.bind.key].join("+") });
+    }
+  }
+  return out;
 }
 
 const childrenByTag = (el: Element, tag: string): Element[] =>
@@ -96,7 +118,7 @@ const EMPTY_BASE =
  * Construit le XML control-profile : reprend tout le profil joueur (ou base vide)
  * et injecte nos binds. Retourne le XML et le nombre de binds ajoutés.
  */
-function buildXml(playerXml: string | null): { xml: string; added: number } {
+function buildXml(playerXml: string | null, inject: ProfileBind[]): { xml: string; added: number } {
   const parser = new DOMParser();
   let doc = parser.parseFromString(playerXml ?? EMPTY_BASE, "application/xml");
   if (doc.getElementsByTagName("parsererror").length > 0) {
@@ -155,7 +177,7 @@ function buildXml(playerXml: string | null): { xml: string; added: number } {
 
   // Injection de nos binds dans le bon actionmap.
   let added = 0;
-  for (const b of ourBinds()) {
+  for (const b of inject) {
     let am = childrenByTag(root, "actionmap").find((c) => c.getAttribute("name") === b.map);
     if (!am) {
       am = doc.createElement("actionmap");
@@ -186,11 +208,11 @@ function buildXml(playerXml: string | null): { xml: string; added: number } {
  * Génère le control-profile depuis le profil joueur courant et le DÉPOSE via Rust.
  * Silencieux et non bloquant : toute erreur est renvoyée dans le résultat.
  */
-export async function deployControlProfile(): Promise<DeployResult> {
+export async function deployControlProfile(inject: ProfileBind[]): Promise<DeployResult> {
   const at = Date.now();
   try {
     const src = await invoke<KeybindSources>("read_keybind_sources");
-    const { xml, added } = buildXml(src.player_xml ?? null);
+    const { xml, added } = buildXml(src.player_xml ?? null, inject);
     const res = await invoke<{ path: string; bytes: number }>("write_control_profile", { xml });
     return { ok: true, path: res.path, bytes: res.bytes, added, error: null, at };
   } catch (e) {
